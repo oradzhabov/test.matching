@@ -11,16 +11,7 @@ State g_state("Result");
 * @function on_trackbar
 * @brief Callback for trackbar
 */
-void on_trackbar(int, void*)
-{
-    cv::Mat frame;
-    g_state.getSceneFrame(frame);
-
-    cv::Mat adjMtx;
-    std::vector<cv::Vec2f>	shelfLinesArray = shelfLines(frame);
-    cv::Mat					img_scene_adj = AdjustPerspective(frame, shelfLinesArray, adjMtx);
-
-    g_state.showImage(img_scene_adj);
+void on_trackbar(int, void*) {
 }
 
 int main() {
@@ -33,10 +24,14 @@ int main() {
     //const std::string   imgScenePath = "LQ\\angle\\433995564_w640_h640_sigor.jpeg";
     //const std::string   imgScenePath = "LQ\\angle\\744858602.jpg";
     //const std::string   imgScenePath = "LQ\\siqareti.jpg";
-    const std::string   imgScenePath = "HQ\\Angle\\NYML105-828_2017_153838_hd.jpg";
+    //const std::string   imgScenePath = "HQ\\Angle\\NYML105-828_2017_153838_hd.jpg";
+    //
+    const std::string   videoScenePath = "AWM Smart Shelf on Tobacco Gondola.mp4";
 
 
-    if (g_state.Initialize(Provider::CreateImageProvider(testCasePath + imgScenePath)) != 0)
+    //cv::Ptr<Provider>   srcProvider = Provider::CreateImageProvider(testCasePath + imgScenePath);
+    cv::Ptr<Provider>   srcProvider = Provider::CreateVideoProvider(testCasePath + videoScenePath);
+    if (g_state.Initialize(srcProvider) != 0)
         return -1;
 
     const int alpha_slider_max = 100;
@@ -46,8 +41,44 @@ int main() {
     /// Show some stuff
     on_trackbar(alpha_slider, 0);
 
+
     std::cout << "Press Esc for exit" << std::endl;
-    while (cv::waitKey(0) != 27) {}
+    std::cout << "Press Space for play per frame" << std::endl;
+    cv::Mat         frame;
+    cv::Mat         adjMtx;
+    int             key = 0;
+    //
+    while (key != 27) {
+        if (key == ' ')
+            key = cv::waitKey(0);
+        else
+            key = cv::waitKey(1);
+
+
+        g_state.getSceneFrame(frame);
+        if (frame.empty()) continue;
+
+
+        std::vector<cv::Vec2f>	shelfLinesArray = shelfLines(frame, CV_PI / 180.0);
+
+        //
+        bool gotIt = false;
+        if (shelfLinesArray.size() > 1) {
+
+            cv::Mat frameAndLines = frame.clone();
+            for (int i = 0; i < shelfLinesArray.size(); i++)
+                draw::Lines(shelfLinesArray[i], frameAndLines, CV_RGB(0, 255, 255), 1);
+
+            //cv::Mat					img_scene_adj = AdjustPerspective(frame, shelfLinesArray, adjMtx);
+            //if (img_scene_adj.empty()) continue;
+
+            g_state.showImage(frameAndLines);
+            gotIt = true;
+        }
+
+        if (!gotIt)
+            g_state.showImage(frame);
+    }
 
     return 0;
 }

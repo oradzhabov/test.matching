@@ -26,6 +26,9 @@ namespace draw {
 cv::Rect select_roi(const cv::Mat & img);
 
 
-std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene);
+/**
+* @param HoughAnglePrecissionDeg precission of lines detection. In radians
+*/
+std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene, const double HoughAnglePrecission);
 
 cv::Mat AdjustPerspective(const cv::Mat & img_scene, std::vector<cv::Vec2f> & lines, cv::Mat & perspectiveTranformMatrix);

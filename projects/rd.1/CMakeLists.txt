@@ -4,6 +4,7 @@ SET(SOURCE
 	main.cpp
 	Provider/Provider.cpp
 	Provider/ImageProvider.cpp
+	Provider/VideoProvider.cpp
 	State/State.cpp
 	Template/Template.cpp
 	Helper/Shelf.cpp
@@ -15,6 +16,7 @@ SET(HEADERS
 	main.h
 	Provider/Provider.h
 	Provider/ImageProvider.h
+	Provider/VideoProvider.h
 	State/State.h
 	Template/Template.h
 )

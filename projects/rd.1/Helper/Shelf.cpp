@@ -96,7 +96,7 @@ double findPeriod(const std::vector<double> & arg) {
 	return myMAtMean;
 }
 
-std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene) {
+std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene, const double HoughAnglePrecission) {
 
 	cv::Mat			temp;
 	cv::Mat			img_object_gray;
@@ -104,22 +104,25 @@ std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene) {
 	const int		N = 5;
 	const double	C = 2;
 
+    //
+    // Apply Histogram Equalization
+    cv::Mat img_object_gray_eq;
+    cv::equalizeHist(img_object_gray, img_object_gray_eq);
+    img_object_gray = img_object_gray_eq;
+
+    //
 	// Calculate a mean over a NxN window and subtracts C from the mean. This is the threshold level for every pixel.
 	cv::adaptiveThreshold(img_object_gray, temp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, N, C);
 	// Since we're interested in the cross-lines(shelf on the counter), and they are dark, we invert the image
 	cv::bitwise_not(temp, temp);
+    cv::imshow("temp_adaptiveThreshold", temp);
+
 	//
 	// Focus on horizontal lines(shelf on the counter)
-	//cv::Mat kernel = (cv::Mat_<uchar>(3, 3) << 0, 1, 0, 1, 1, 1, 0, 1, 0);
-	cv::Mat kernel_h = (cv::Mat_<uchar>(3, 3) << 0, 0, 0, 1, 1, 1, 0, 0, 0);
-	//cv::Mat kernel = (cv::Mat_<uchar>(3, 3) << 0, 1, 0, 0, 1, 0, 0, 1, 0);
-	//cv::erode(temp, temp, kernel_h);
+	cv::Mat kernel_h = (cv::Mat_<uchar>(3, 3) << 0, 0, 0,  1, 1, 1,   0, 0 ,0);
 	cv::erode(temp, temp, kernel_h);
-	//cv::erode(temp, temp, kernel_h);
-	//cv::dilate(temp, temp, kernel_h);
 	cv::dilate(temp, temp, kernel_h);
-	//cv::dilate(temp, temp, kernel_h);
-
+    cv::imshow("temp_kernel", temp);
 
 	//
 	// Find contours
@@ -127,12 +130,13 @@ std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene) {
 	std::vector<cv::Vec4i>					hierarchy;
 	cv::findContours(temp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point());
 	//
+    // Fiter contours
 	cv::Mat mask = cv::Mat::zeros(temp.size(), CV_8UC1);
 	for (int i = 0; i < contours.size(); i++) {
 		double area = cv::contourArea(contours[i]);
 		cv::Rect rect = cv::boundingRect(contours[i]);
 		if (area >(temp.cols * 0.5)
-			//&&  rect.width / rect.height > 10
+			//&& rect.width / rect.height > 10
 			//&& rect.width > temp.cols / 2
 			) {
 			cv::drawContours(mask, contours, i, cv::Scalar(255), CV_FILLED, 8);
@@ -145,11 +149,15 @@ std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene) {
 	cv::Sobel(mask, grad_y, CV_8U, 0, 1, 1);
 	cv::convertScaleAbs(grad_y, mask);
 
+    cv::imshow("temp", temp);
+    cv::imshow("mask", mask);
 
 	// Detect lines
 	std::vector<cv::Vec2f>		lines;
-	cv::HoughLines(mask, lines, 1, CV_PI / 360.0, 250);
+	cv::HoughLines(mask, lines, 1, HoughAnglePrecission, 250);
 
+    return lines;
+/*
 	cv::Mat sceneLines = img_scene.clone() * 0.4;
 	for (int i = 0;i<lines.size();i++) draw::Lines(lines[i], sceneLines, CV_RGB(0, 255, 255), 1);
 
@@ -171,4 +179,5 @@ std::vector<cv::Vec2f> shelfLines(const cv::Mat & img_scene) {
 	//cv::imshow("sceneLines", sceneLines);
 
 	return linesMerged;
+    */
 }

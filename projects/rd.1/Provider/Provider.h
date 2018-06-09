@@ -8,4 +8,5 @@ public:
 
 public:
     static cv::Ptr<Provider> CreateImageProvider(const std::string & imgPath);
+    static cv::Ptr<Provider> CreateVideoProvider(const std::string & videoPath);
 };
