@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(test.matching)
 
-find_package( OpenCV REQUIRED COMPONENTS core features2d imgproc imgcodecs highgui xfeatures2d ml photo flann calib3d)
+find_package( OpenCV REQUIRED COMPONENTS core features2d imgproc imgcodecs highgui ml photo flann calib3d)
 
 MESSAGE("OpenCV information:") 
 MESSAGE(STATUS "  OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}") 

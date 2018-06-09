@@ -10,6 +10,7 @@ SET(SOURCE
 	Helper/Shelf.cpp
 	Helper/AdjustPerspective.cpp
 	Draw/lines.cpp
+	KPDetector/KPDetector.cpp
 )
 
 SET(HEADERS
@@ -19,6 +20,7 @@ SET(HEADERS
 	Provider/VideoProvider.h
 	State/State.h
 	Template/Template.h
+	KPDetector/KPDetector.h
 )
 
 

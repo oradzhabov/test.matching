@@ -2,6 +2,7 @@
 
 #include <Provider/Provider.h>
 #include <State/State.h>
+#include <KPDetector/KPDetector.h>
 
 
 State g_state("Result");
@@ -26,7 +27,11 @@ int main() {
     //const std::string   imgScenePath = "LQ\\siqareti.jpg";
     //const std::string   imgScenePath = "HQ\\Angle\\NYML105-828_2017_153838_hd.jpg";
     //
-    const std::string   videoScenePath = "AWM Smart Shelf on Tobacco Gondola.mp4";
+    //const std::string   videoScenePath = "AWM Smart Shelf on Tobacco Gondola.mp4";
+    //const std::string   videoScenePath = "1.mp4";
+    //const std::string   videoScenePath = "2.mp4";
+    //const std::string   videoScenePath = "3.mp4";
+    const std::string   videoScenePath = "4.mp4";
 
 
     //cv::Ptr<Provider>   srcProvider = Provider::CreateImageProvider(testCasePath + imgScenePath);
@@ -48,6 +53,9 @@ int main() {
     cv::Mat         adjMtx;
     int             key = 0;
     //
+    KPDetector      detectors[2];
+    int             currDetector = 0;
+    //
     while (key != 27) {
         if (key == ' ')
             key = cv::waitKey(0);
@@ -58,7 +66,14 @@ int main() {
         g_state.getSceneFrame(frame);
         if (frame.empty()) continue;
 
-
+        detectors[currDetector].detect(frame);
+        if (detectors[(currDetector + 1) % 2].haveDetection()) {
+            int prevDetector = (currDetector + 1) % 2;
+            int err = detectors[prevDetector].match(detectors[currDetector]);
+            if (err != 0)
+                currDetector = (currDetector + 1) % 2;
+        }
+        /*
         std::vector<cv::Vec2f>	shelfLinesArray = shelfLines(frame, CV_PI / 180.0);
 
         //
@@ -78,6 +93,8 @@ int main() {
 
         if (!gotIt)
             g_state.showImage(frame);
+        */
+        currDetector = (currDetector + 1) % 2;
     }
 
     return 0;
