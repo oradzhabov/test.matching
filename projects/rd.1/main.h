@@ -17,7 +17,15 @@
 #include <filesystem>
 #include <iterator>
 
+//#define __SFM__DEBUG__
+
 namespace fs = std::experimental::filesystem;
+
+struct CloudPoint {
+    cv::Point3d pt;
+    std::vector<int> imgpt_for_img;
+    double reprojection_error;
+};
 
 namespace draw {
 	void Lines(cv::Vec2f line, cv::Mat &img, cv::Scalar rgb = CV_RGB(0, 0, 255), const int thickness = 1);

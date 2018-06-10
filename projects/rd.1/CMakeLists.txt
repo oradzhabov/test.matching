@@ -11,6 +11,7 @@ SET(SOURCE
 	Helper/AdjustPerspective.cpp
 	Draw/lines.cpp
 	KPDetector/KPDetector.cpp
+	KPDetector/FindCameraMatrices.cpp
 )
 
 SET(HEADERS
