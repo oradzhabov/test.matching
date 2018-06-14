@@ -9,7 +9,10 @@ VideoProvider::VideoProvider(const std::string & videoPath) {
 }
 
 const int VideoProvider::getFrame(cv::Mat & img) const {
-    bool success = m_cap.read(img);
+	cv::Mat temp;
+    bool success = m_cap.read(temp);
+
+	cv::resize(temp, img, cv::Size(temp.cols / 2, temp.rows / 2));
 
     if (m_cap.isOpened() && success == false) {
         // Loop video

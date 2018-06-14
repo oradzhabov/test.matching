@@ -614,11 +614,10 @@ bool FindCameraMatrices(const Mat& K,
 				}				
 			}			
 		}
-        cout << "Found P1: " << endl << Mat(P1) << endl;
+        //cout << "Found P1: " << endl << Mat(P1) << endl;
 
-		for (unsigned int i=0; i<pcloud.size(); i++) {
+		for (unsigned int i=0; i<pcloud.size(); i++)
 			outCloud.push_back(pcloud[i]);
-		}
 	}		
 		
 	t = ((double)getTickCount() - t)/getTickFrequency();
