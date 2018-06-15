@@ -46,14 +46,18 @@ int KPDetector::match(KPDetector & rhs) {
 
     // Seach part of RHS in this object, because RHS(new image) contin OLD part and NEW part. OLD part represented by THIS object
     matcher.knnMatch(rhs.m_descriptors, m_descriptors, matches, 2);
+	
+	// Sort matches by distance to filter them
+	std::sort(matches.begin(), matches.end(), [](const std::vector<cv::DMatch> & a, const std::vector<cv::DMatch> & b) -> bool { return a[0].distance < b[0].distance && a[0].distance < 0.6 * b[1].distance; });
 
     //-- Find only "good" matches. Filter by aspect between 2 neighbours and max distance
     std::vector<cv::DMatch>         good_matches;
     std::vector<cv::KeyPoint>		good_keypoints;
     std::vector<cv::KeyPoint>		good_rhs_keypoints;
-    for (size_t i = 0; i < matches.size(); i++) {
-        if (matches[i][0].distance < 0.6 * matches[i][1].distance && matches[i][0].distance <= 100) {
+    for (size_t i = 0; i < matches.size() && good_matches.size() < 20; i++) {
+        //if (matches[i][0].distance < 0.6 * matches[i][1].distance && matches[i][0].distance <= 100) {
 		//if (matches[i][0].distance < 0.6 * matches[i][1].distance) {
+		if (true) {
             good_matches.push_back(matches[i][0]);
             good_keypoints.push_back(m_keypoints[matches[i][0].trainIdx]);
             good_rhs_keypoints.push_back(rhs.m_keypoints[matches[i][0].queryIdx]);
@@ -99,7 +103,7 @@ int KPDetector::match(KPDetector & rhs) {
 #endif
     );
 
-	if (success && false) {
+	if (success && true) {
 		cv::Matx44d P_4x4(P(0, 0), P(0, 1), P(0, 2), P(0, 3),
 			P(1, 0), P(1, 1), P(1, 2), P(1, 3),
 			P(2, 0), P(2, 1), P(2, 2), P(2, 3),
@@ -119,7 +123,7 @@ int KPDetector::match(KPDetector & rhs) {
 		cv::Mat t = rhs.m_img.clone();
 		float x = t.cols / 2;
 		float y = t.rows / 2;
-		float z = 2000;
+		float z = 1000;
 		std::vector<cv::Vec4d> p3d{ { 0, 0, z, 1 }, { x, 0, z, 1 }, { 0, y, z, 1 }, { x, y, z, 1} };
 		for (int i = 0; i < p3d.size(); ++i) {
 			cv::Vec4d proj = P_4x4 * p3d[i];
@@ -130,14 +134,16 @@ int KPDetector::match(KPDetector & rhs) {
 		cv::imshow("t",t);
 
 	}
-    printf("-- Matches Nb: %d \n", matches.size());
+	if (!success) {
+		cv::waitKey(1000);
+		//return -1;
+		printf("...\n");
+	}
+	
+	printf("-- Matches Nb: %d \n", matches.size());
     printf("-- Good Matches Nb: %d \n", good_matches.size());
     printf("-- Matches Passed Fundmaental Matrix form test Nb: %d \n", goodF_keypoints.size());
 
-    if (!success) {
-        //cv::waitKey(1000);
-        //return -1;
-    }
 
     //
     for (size_t i = 0; i < good_matches.size(); i++) {

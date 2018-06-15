@@ -406,7 +406,7 @@ void TakeSVDOfE(Mat_<double>& E, Mat& svd_u, Mat& svd_vt, Mat& svd_w) {
     */
 }
 
-bool TestTriangulation(const vector<CloudPoint>& pcloud, const Matx34d& P, vector<uchar>& status) {
+double TestTriangulation(const vector<CloudPoint>& pcloud, const Matx34d& P, vector<uchar>& status) {
 	vector<Point3d> pcloud_pt3d = CloudPointsToPoints(pcloud);
 	vector<Point3d> pcloud_pt3d_projected(pcloud_pt3d.size());
 	
@@ -424,7 +424,7 @@ bool TestTriangulation(const vector<CloudPoint>& pcloud, const Matx34d& P, vecto
 	double percentage = ((double)count / (double)pcloud.size());
 	cout << count << "/" << pcloud.size() << " = " << percentage*100.0 << "% are in front of camera" << endl;
 	if(percentage < 0.25) //ros: was 0.75
-		return false; //less than 75% of the points are in front of the camera
+		return percentage; //less than 75% of the points are in front of the camera
 
 	//check for coplanarity of points
 	if(false) //not
@@ -451,10 +451,10 @@ bool TestTriangulation(const vector<CloudPoint>& pcloud, const Matx34d& P, vecto
 
 		cout << num_inliers << "/" << pcloud.size() << " are coplanar" << endl;
 		if((double)num_inliers / (double)(pcloud.size()) > 0.85)
-			return false;
+			return 0;
 	}
 
-	return true;
+	return percentage;
 }
 
 bool DecomposeEtoRandT(
@@ -505,7 +505,7 @@ bool FindCameraMatrices(const Mat& K,
 						vector<KeyPoint>& imgpts1_good,
 						vector<KeyPoint>& imgpts2_good,
 						Matx34d& P,
-						Matx34d& P1,
+						Matx34d& P1out,
 						vector<DMatch>& matches,
 						vector<CloudPoint>& outCloud
 #ifdef __SFM__DEBUG__
@@ -534,7 +534,7 @@ bool FindCameraMatrices(const Mat& K,
 	//according to http://en.wikipedia.org/wiki/Essential_matrix#Properties_of_the_essential_matrix
 	if(fabsf(determinant(E)) > 1e-07) {
 		cout << "det(E) != 0 : " << determinant(E) << "\n";
-		P1 = 0;
+		P1out = 0;
 		return false;
 	}
 		
@@ -547,28 +547,106 @@ bool FindCameraMatrices(const Mat& K,
 	{		
 		if (!DecomposeEtoRandT(E,R1,R2,t1,t2)) return false;
 
-		if(determinant(R1) + 1.0 < 1e-09) {
+		//if(determinant(R1) + 1.0 < std::numeric_limits<double>::min()) {
+		//if (std::abs(determinant(R1) + 1.0) < std::numeric_limits<double>::min()) {
+		//if (std::abs(determinant(R1) + 1.0) < std::numeric_limits<double>::epsilon()) {
+		if (std::abs(determinant(R1) + 1.0) < 1.e-9) {
 			//according to http://en.wikipedia.org/wiki/Essential_matrix#Showing_that_it_is_valid
-			cout << "det(R) == -1 ["<<determinant(R1)<<"]: flip E's sign" << endl;
+			std::cout << "det(R) == -1 ["<<determinant(R1)<<"]: flip E's sign" << endl;
 			E = -E;
 			DecomposeEtoRandT(E,R1,R2,t1,t2);
 		}
+		/*
 		if (!CheckCoherentRotation(R1)) {
 			cout << "resulting rotation is not coherent\n";
-			P1 = 0;
+			P1out = 0;
 			return false;
 		}
-			
+		*/
+		/*
 		P1 = Matx34d(R1(0,0),	R1(0,1),	R1(0,2),	t1(0),
 						R1(1,0),	R1(1,1),	R1(1,2),	t1(1),
 						R1(2,0),	R1(2,1),	R1(2,2),	t1(2));
+						*/
 		//cout << "Testing P1 " << endl << Mat(P1) << endl;
 			
-		vector<CloudPoint>  pcloud,pcloud1;
+		vector<CloudPoint>  pcloud1;
         vector<KeyPoint>    corresp;
+
+		struct TriangleResult {
+			Matx34d				P1;
+			double              reproj_error1;
+			double              reproj_error2;
+			double				percent1;
+			double				percent2;
+			bool				checkCoherent;
+			vector<CloudPoint>  pcloud;
+		};
+		vector<uchar>       tmp_status;
+		TriangleResult		tstResult[4];
+		tstResult[0].P1 = Matx34d(R1(0, 0), R1(0, 1), R1(0, 2), t1(0),
+									R1(1, 0), R1(1, 1), R1(1, 2), t1(1),
+									R1(2, 0), R1(2, 1), R1(2, 2), t1(2));
+		tstResult[0].checkCoherent = CheckCoherentRotation(R1);
+		tstResult[0].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[0].P1, tstResult[0].pcloud, corresp);
+		tstResult[0].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[0].P1, P, pcloud1, corresp);
+		tstResult[0].percent1 = TestTriangulation(tstResult[0].pcloud, tstResult[0].P1, tmp_status);
+		tstResult[0].percent2 = TestTriangulation(pcloud1, P, tmp_status);
+		//
+		pcloud1.clear(); corresp.clear();
+		tstResult[1].P1 = Matx34d(R1(0, 0), R1(0, 1), R1(0, 2), t2(0),
+									R1(1, 0), R1(1, 1), R1(1, 2), t2(1),
+									R1(2, 0), R1(2, 1), R1(2, 2), t2(2));
+		tstResult[1].checkCoherent = tstResult[0].checkCoherent;
+		tstResult[1].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[1].P1, tstResult[1].pcloud, corresp);
+		tstResult[1].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[1].P1, P, pcloud1, corresp);
+		tstResult[1].percent1 = TestTriangulation(tstResult[1].pcloud, tstResult[1].P1, tmp_status);
+		tstResult[1].percent2 = TestTriangulation(pcloud1, P, tmp_status);
+		//
+		pcloud1.clear(); corresp.clear();
+		tstResult[2].P1 = Matx34d(R2(0, 0), R2(0, 1), R2(0, 2), t1(0),
+									R2(1, 0), R2(1, 1), R2(1, 2), t1(1),
+									R2(2, 0), R2(2, 1), R2(2, 2), t1(2));
+		tstResult[2].checkCoherent = CheckCoherentRotation(R2);
+		tstResult[2].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[2].P1, tstResult[2].pcloud, corresp);
+		tstResult[2].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[2].P1, P, pcloud1, corresp);
+		tstResult[2].percent1 = TestTriangulation(tstResult[2].pcloud, tstResult[2].P1, tmp_status);
+		tstResult[2].percent2 = TestTriangulation(pcloud1, P, tmp_status);
+		//
+		pcloud1.clear(); corresp.clear();
+		tstResult[3].P1 = Matx34d(R2(0, 0), R2(0, 1), R2(0, 2), t2(0),
+									R2(1, 0), R2(1, 1), R2(1, 2), t2(1),
+									R2(2, 0), R2(2, 1), R2(2, 2), t2(2));
+		tstResult[3].checkCoherent = tstResult[2].checkCoherent;
+		tstResult[3].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[3].P1, tstResult[3].pcloud, corresp);
+		tstResult[3].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[3].P1, P, pcloud1, corresp);
+		tstResult[3].percent1 = TestTriangulation(tstResult[3].pcloud, tstResult[3].P1, tmp_status);
+		tstResult[3].percent2 = TestTriangulation(pcloud1, P, tmp_status);
+
+		int bestI = -1;
+		double bestPercent = 0;
+		double minError = std::numeric_limits<double>::max();
+		for (int i = 0; i < 4; ++i) {
+			if (tstResult[i].checkCoherent) {
+				double minP = std::min<double>(tstResult[i].percent1, tstResult[i].percent2);
+				double maxE = std::min<double>(tstResult[i].reproj_error1, tstResult[i].reproj_error2);
+				if (minP >= bestPercent && maxE < minError) {
+					minError = maxE;
+					bestPercent = minP;
+					bestI = i;
+				}
+			}
+		}
+		if (bestI < 0) {
+			std::cout << "Shit." << endl;
+			return false;
+		}
+		P1out = tstResult[bestI].P1;
+		//
+
+		/*
 		double              reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, P1, pcloud, corresp);
 		double              reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, P1, P, pcloud1, corresp);
-		vector<uchar>       tmp_status;
         //
 		//check if pointa are triangulated --in front-- of cameras for all 4 ambiguations
 		if (!TestTriangulation(pcloud,P1,tmp_status) || !TestTriangulation(pcloud1,P,tmp_status) || reproj_error1 > 100.0 || reproj_error2 > 100.0) {
@@ -614,10 +692,11 @@ bool FindCameraMatrices(const Mat& K,
 				}				
 			}			
 		}
+		*/
         //cout << "Found P1: " << endl << Mat(P1) << endl;
 
-		for (unsigned int i=0; i<pcloud.size(); i++)
-			outCloud.push_back(pcloud[i]);
+		for (unsigned int i=0; i < tstResult[bestI].pcloud.size(); i++)
+			outCloud.push_back(tstResult[bestI].pcloud[i]);
 	}		
 		
 	t = ((double)getTickCount() - t)/getTickFrequency();
