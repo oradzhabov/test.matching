@@ -220,6 +220,8 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
         // To avoid NaN's when best match has zero distance we will use inversed ratio. 
         const float minRatio = 1.f / 1.5f;
         
+        m_knnMatches.clear();
+
         // KNN match will return 2 nearest matches for each query descriptor
         m_matcher->knnMatch(queryDescriptors, m_knnMatches, 2);
 

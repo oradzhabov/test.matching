@@ -25,9 +25,9 @@ public:
      * Initialize a pattern detector with specified feature detector, descriptor extraction and matching algorithm
      */
     PatternDetector
-        (
-        cv::Ptr<cv::FeatureDetector>     detector  = cv::ORB::create(1000), 
-        cv::Ptr<cv::DescriptorMatcher>   matcher   = new cv::BFMatcher(cv::NORM_HAMMING, true),
+    (
+        cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
+        cv::Ptr<cv::DescriptorMatcher>   matcher = new cv::BFMatcher(cv::NORM_HAMMING, true),
         bool enableRatioTest                       = false
         );
 
