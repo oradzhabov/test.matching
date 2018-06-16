@@ -54,13 +54,16 @@ int KPDetector::match(KPDetector & rhs) {
     std::vector<cv::DMatch>         good_matches;
     std::vector<cv::KeyPoint>		good_keypoints;
     std::vector<cv::KeyPoint>		good_rhs_keypoints;
-    for (size_t i = 0; i < matches.size() && good_matches.size() < 20; i++) {
+    for (size_t i = 0; i < matches.size(); i++) {
         //if (matches[i][0].distance < 0.6 * matches[i][1].distance && matches[i][0].distance <= 100) {
-		//if (matches[i][0].distance < 0.6 * matches[i][1].distance) {
-		if (true) {
+		if (matches[i][0].distance < 0.6 * matches[i][1].distance) {
+		//if (true) {
             good_matches.push_back(matches[i][0]);
             good_keypoints.push_back(m_keypoints[matches[i][0].trainIdx]);
             good_rhs_keypoints.push_back(rhs.m_keypoints[matches[i][0].queryIdx]);
+        }
+        else {
+            break;
         }
     }
 
@@ -74,13 +77,14 @@ int KPDetector::match(KPDetector & rhs) {
     }
 
     if (good_matches.size() < 3) {
-        cv::waitKey(1000);
+        //cv::waitKey(1000);
         return -1;
     }
     // Camera intristic parameter matrix
     // I did not calibration
-    cv::Mat K = (cv::Mat_<double>(3, 3) <<   400, 0, m_img.cols / 2,
-                                            0, 400, m_img.rows / 2,
+    const double focalLength = 400;
+    cv::Mat K = (cv::Mat_<double>(3, 3) << focalLength, 0, m_img.cols / 2,
+                                            0, focalLength, m_img.rows / 2,
                                             0, 0, 1);
     //cv::Mat K = cv::Mat::zeros(3, 3, CV_64FC1); K.diag() = 1; ///< fictive calibration matrix
 	cv::Matx34d P1( 1, 0, 0, 0,
@@ -132,10 +136,11 @@ int KPDetector::match(KPDetector & rhs) {
 		}
 		std::cout << "----------------------------------------------------------------------" << std::endl;
 		cv::imshow("t",t);
+       // cv::waitKey(0);
 
 	}
 	if (!success) {
-		cv::waitKey(1000);
+//		cv::waitKey(1000);
 		//return -1;
 		printf("...\n");
 	}

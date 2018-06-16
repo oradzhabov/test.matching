@@ -311,10 +311,10 @@ void DecomposeEssentialUsingHorn90(double _E[9], double _R1[9], double _R2[9], d
 #endif
 }
 
-bool CheckCoherentRotation(cv::Mat_<double>& R) {
+bool CheckCoherentRotation(cv::Mat_<double>& R, const double & tol) {
 
 	
-	if(fabsf(determinant(R))-1.0 > 1e-07) {
+	if(fabsf(determinant(R))-1.0 > tol) {
 		cerr << "det(R) != +-1.0, this is not a rotation matrix" << endl;
 		return false;
 	}
@@ -377,9 +377,9 @@ Mat GetFundamentalMat(const vector<KeyPoint>& imgpts1,
 }
 
 void TakeSVDOfE(Mat_<double>& E, Mat& svd_u, Mat& svd_vt, Mat& svd_w) {
-#if 1
+#ifndef USE_EIGEN
 	//Using OpenCV's SVD
-	SVD svd(E,SVD::MODIFY_A); // ros: was SVD::MODIFY_A
+	SVD svd(E,SVD::MODIFY_A);
 	svd_u = svd.u;
 	svd_vt = svd.vt;
 	svd_w = svd.w;
@@ -514,6 +514,8 @@ bool FindCameraMatrices(const Mat& K,
 #endif
 						) 
 {
+    const double detTol = 1.e-7;//std::numeric_limits<double>::epsilon();
+
 	cout << "Find camera matrices...";
 	double t = getTickCount();
 		
@@ -532,8 +534,9 @@ bool FindCameraMatrices(const Mat& K,
 	Mat_<double> E = K.t() * F * K; //according to HZ (9.12)
 
 	//according to http://en.wikipedia.org/wiki/Essential_matrix#Properties_of_the_essential_matrix
-	if(fabsf(determinant(E)) > 1e-07) {
-		cout << "det(E) != 0 : " << determinant(E) << "\n";
+    const double detE = determinant(E);
+	if(fabs(detE) > 1.e-4) {
+		cout << "det(E) != 0 : " << detE << "\n";
 		P1out = 0;
 		return false;
 	}
@@ -547,17 +550,21 @@ bool FindCameraMatrices(const Mat& K,
 	{		
 		if (!DecomposeEtoRandT(E,R1,R2,t1,t2)) return false;
 
+
+
+        const double detR1 = determinant(R1);
+        const double detR2 = determinant(R2);
 		//if(determinant(R1) + 1.0 < std::numeric_limits<double>::min()) {
 		//if (std::abs(determinant(R1) + 1.0) < std::numeric_limits<double>::min()) {
 		//if (std::abs(determinant(R1) + 1.0) < std::numeric_limits<double>::epsilon()) {
-		if (std::abs(determinant(R1) + 1.0) < 1.e-9) {
+		if (std::abs(detR1 + 1.0) <= detTol) {
 			//according to http://en.wikipedia.org/wiki/Essential_matrix#Showing_that_it_is_valid
-			std::cout << "det(R) == -1 ["<<determinant(R1)<<"]: flip E's sign" << endl;
+			std::cout << "det(R) == -1 ["<< detR1 <<"]: flip E's sign" << endl;
 			E = -E;
 			DecomposeEtoRandT(E,R1,R2,t1,t2);
 		}
 		/*
-		if (!CheckCoherentRotation(R1)) {
+		if (!CheckCoherentRotation(R1), 1.e-7) {
 			cout << "resulting rotation is not coherent\n";
 			P1out = 0;
 			return false;
@@ -587,7 +594,7 @@ bool FindCameraMatrices(const Mat& K,
 		tstResult[0].P1 = Matx34d(R1(0, 0), R1(0, 1), R1(0, 2), t1(0),
 									R1(1, 0), R1(1, 1), R1(1, 2), t1(1),
 									R1(2, 0), R1(2, 1), R1(2, 2), t1(2));
-		tstResult[0].checkCoherent = CheckCoherentRotation(R1);
+		tstResult[0].checkCoherent = CheckCoherentRotation(R1, detTol);
 		tstResult[0].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[0].P1, tstResult[0].pcloud, corresp);
 		tstResult[0].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[0].P1, P, pcloud1, corresp);
 		tstResult[0].percent1 = TestTriangulation(tstResult[0].pcloud, tstResult[0].P1, tmp_status);
@@ -607,7 +614,7 @@ bool FindCameraMatrices(const Mat& K,
 		tstResult[2].P1 = Matx34d(R2(0, 0), R2(0, 1), R2(0, 2), t1(0),
 									R2(1, 0), R2(1, 1), R2(1, 2), t1(1),
 									R2(2, 0), R2(2, 1), R2(2, 2), t1(2));
-		tstResult[2].checkCoherent = CheckCoherentRotation(R2);
+		tstResult[2].checkCoherent = CheckCoherentRotation(R2, detTol);
 		tstResult[2].reproj_error1 = TriangulatePoints(imgpts1_good, imgpts2_good, K, Kinv, distcoeff, P, tstResult[2].P1, tstResult[2].pcloud, corresp);
 		tstResult[2].reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, tstResult[2].P1, P, pcloud1, corresp);
 		tstResult[2].percent1 = TestTriangulation(tstResult[2].pcloud, tstResult[2].P1, tmp_status);
@@ -625,13 +632,14 @@ bool FindCameraMatrices(const Mat& K,
 
 		int bestI = -1;
 		double bestPercent = 0;
-		double minError = std::numeric_limits<double>::max();
+		double maxError = std::numeric_limits<double>::max();
 		for (int i = 0; i < 4; ++i) {
 			if (tstResult[i].checkCoherent) {
 				double minP = std::min<double>(tstResult[i].percent1, tstResult[i].percent2);
-				double maxE = std::min<double>(tstResult[i].reproj_error1, tstResult[i].reproj_error2);
-				if (minP >= bestPercent && maxE < minError) {
-					minError = maxE;
+				double maxE = std::max<double>(tstResult[i].reproj_error1, tstResult[i].reproj_error2);
+				//if (minP >= bestPercent && maxE <= minError) {
+                if (minP >= bestPercent && maxE < 100) {
+                    maxError = maxE;
 					bestPercent = minP;
 					bestI = i;
 				}
@@ -641,6 +649,7 @@ bool FindCameraMatrices(const Mat& K,
 			std::cout << "Shit." << endl;
 			return false;
 		}
+        std::cout << "Best variant: " << bestI << std::endl;
 		P1out = tstResult[bestI].P1;
 		//
 
@@ -660,7 +669,7 @@ bool FindCameraMatrices(const Mat& K,
 			reproj_error2 = TriangulatePoints(imgpts2_good, imgpts1_good, K, Kinv, distcoeff, P1, P, pcloud1, corresp);
 				
 			if (!TestTriangulation(pcloud,P1,tmp_status) || !TestTriangulation(pcloud1,P,tmp_status) || reproj_error1 > 100.0 || reproj_error2 > 100.0) {
-				if (!CheckCoherentRotation(R2)) {
+				if (!CheckCoherentRotation(R2), 1.e-7) {
 					cout << "resulting rotation is not coherent\n";
 					P1 = 0;
 					return false;
