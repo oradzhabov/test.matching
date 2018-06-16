@@ -74,6 +74,7 @@ protected:
         const std::vector<cv::KeyPoint>& trainKeypoints, 
         float reprojectionThreshold,
         std::vector<cv::DMatch>& matches, 
+        const int method,
         cv::Mat& homography);
 
 private:

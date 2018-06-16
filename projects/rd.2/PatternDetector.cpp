@@ -116,6 +116,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         m_pattern.keypoints, 
         homographyReprojectionThreshold, 
         m_matches, 
+        CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
         m_roughHomography);
 
     if (homographyFound)
@@ -147,6 +148,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 m_pattern.keypoints, 
                 homographyReprojectionThreshold, 
                 refinedMatches, 
+                CV_FM_LMEDS, // LMEDS good for preciss estmation
                 m_refinedHomography);
 
             if (!homographyFound || m_refinedHomography.empty())
@@ -256,6 +258,7 @@ bool PatternDetector::refineMatchesWithHomography
     const std::vector<cv::KeyPoint>& trainKeypoints, 
     float reprojectionThreshold,
     std::vector<cv::DMatch>& matches,
+    const int method,
     cv::Mat& homography
     )
 {
@@ -278,7 +281,7 @@ bool PatternDetector::refineMatchesWithHomography
     std::vector<unsigned char> inliersMask(srcPoints.size());
     homography = cv::findHomography(srcPoints, 
                                     dstPoints, 
-                                    CV_FM_RANSAC, 
+                                    method, 
                                     reprojectionThreshold, 
                                     inliersMask);
 
