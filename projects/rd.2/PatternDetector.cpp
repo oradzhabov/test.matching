@@ -221,7 +221,7 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
     if (enableRatioTest)
     {
         // To avoid NaN's when best match has zero distance we will use inversed ratio. 
-        const float minRatio = 1.f / 1.5f;
+        const float minRatio = 1.f / 1.2f;
         
         m_knnMatches.clear();
 
