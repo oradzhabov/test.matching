@@ -35,14 +35,9 @@ namespace cv
     }
 
     // Draw matches between two images
-    inline cv::Mat getMatchesImage(cv::Mat query, cv::Mat pattern, const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, std::vector<cv::DMatch> matches, int maxMatchesDrawn)
+    inline cv::Mat getMatchesImage(const cv::Mat & query, const cv::Mat & pattern, const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, const std::vector<cv::DMatch> & matches, const size_t & maxMatchesDrawn)
     {
         cv::Mat outImg;
-
-        if (matches.size() > maxMatchesDrawn)
-        {
-            matches.resize(maxMatchesDrawn);
-        }
 
         cv::drawMatches
             (
@@ -50,7 +45,7 @@ namespace cv
             queryKp, 
             pattern, 
             trainKp,
-            matches, 
+            std::vector<cv::DMatch> (matches.begin(), matches.begin() + std::min<size_t>(matches.size(), maxMatchesDrawn)),
             outImg, 
             cv::Scalar(0,200,0,255), 
             cv::Scalar::all(-1),

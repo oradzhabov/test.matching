@@ -148,14 +148,17 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 homographyReprojectionThreshold, 
                 refinedMatches, 
                 m_refinedHomography);
+
+            if (!homographyFound || m_refinedHomography.empty())
+                return homographyFound;
 #if _DEBUG
             cv::showAndSave("MatchesWithRefinedPose", getMatchesImage(m_warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
 #endif
             // Get a result homography as result of matrix product of refined and rough homographies:
             info.homography = m_roughHomography * m_refinedHomography;
 
-            // Transform contour with rough homography
 #if _DEBUG
+            // Transform contour with rough homography
             cv::perspectiveTransform(m_pattern.points2d, info.points2d, m_roughHomography);
             info.draw2dContour(tmp, CV_RGB(0,200,0));
 #endif

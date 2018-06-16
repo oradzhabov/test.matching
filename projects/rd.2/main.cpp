@@ -44,7 +44,8 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
 int main(int argc, const char * argv[])
 {
     // Change this calibration to yours:
-    CameraCalibration calibration(526.58037684199849f, 524.65577209994706f, 318.41744018680112f, 202.96659047014398f);
+    //CameraCalibration calibration(526.58037684199849f, 524.65577209994706f, 318.41744018680112f, 202.96659047014398f);
+    CameraCalibration calibration(526.58037684199849f, 524.65577209994706f, 320.0f, 240.0f);
     
     if (argc < 2)
     {
