@@ -20,21 +20,26 @@
 
 class ARPipeline
 {
+    struct PatternEntity {
+        Pattern             m_pattern;
+        PatternTrackingInfo m_patternInfo;
+    };
+
 public:
-  ARPipeline(const cv::Mat& patternImage, const CameraCalibration& calibration);
+  ARPipeline(const std::vector<cv::Mat>& patternImages, const CameraCalibration& calibration);
 
   bool processFrame(const cv::Mat& inputFrame);
 
-  const Transformation& getPatternLocation() const;
+  const size_t          getPatternsCount() const;
+  const bool            isPatternFound(const size_t index) const;
+  const Transformation& getPatternLocation(const size_t index) const;
 
   PatternDetector     m_patternDetector;
 private:
 
 private:
-  CameraCalibration   m_calibration;
-  Pattern             m_pattern;
-  PatternTrackingInfo m_patternInfo;
-  //PatternDetector     m_patternDetector;
+  CameraCalibration             m_calibration;
+  std::vector<PatternEntity>    m_patternEntities;
 };
 
 #endif

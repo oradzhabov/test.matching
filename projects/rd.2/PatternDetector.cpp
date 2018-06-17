@@ -90,9 +90,9 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
 
 bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& info)
 {
-    // Convert input image to gray
-    getGray(image, m_grayImg);
-    
+    // Initialize result
+    info.homographyFound = false;
+
     // Extract feature points from input gray image
     extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
     
@@ -109,7 +109,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     std::vector<cv::DMatch> refinedMatches;
 
     // Find homography transformation and detect good matches
-    bool homographyFound = refineMatchesWithHomography(
+    info.homographyFound = refineMatchesWithHomography(
         m_queryKeypoints, 
         m_pattern.keypoints, 
         homographyReprojectionThreshold, 
@@ -117,7 +117,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
         m_roughHomography);
 
-    if (homographyFound)
+    if (info.homographyFound)
     {
 #if _DEBUG
         cv::showAndSave("Refined matches using RANSAC", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, m_matches, 100));
@@ -138,7 +138,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             getMatches(m_queryDescriptors, refinedMatches);
 
             // Estimate new refinement homography
-            homographyFound = refineMatchesWithHomography(
+            info.homographyFound = refineMatchesWithHomography(
                 warpedKeypoints, 
                 m_pattern.keypoints, 
                 homographyReprojectionThreshold,
@@ -146,8 +146,8 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 CV_FM_LMEDS, // LMEDS good for preciss estmation
                 m_refinedHomography);
 
-            if (!homographyFound || m_refinedHomography.empty())
-                return homographyFound;
+            if (!info.homographyFound || m_refinedHomography.empty())
+                return info.homographyFound;
 
 #if _DEBUG
             cv::showAndSave("MatchesWithWarpedPose", getMatchesImage(m_warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
@@ -195,7 +195,11 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     std::cout << std::endl;
 #endif
 
-    return homographyFound;
+    // Clear found result to prevent remark them later in pipeline
+    if (info.homographyFound)
+        info.fill2dContour(m_grayImg, cv::Scalar(0,0,0));
+
+    return info.homographyFound;
 }
 
 void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray)
@@ -206,6 +210,11 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray)
         cv::cvtColor(image, gray, CV_BGRA2GRAY);
     else if (image.channels() == 1)
         gray = image;
+}
+
+void PatternDetector::getGray(const cv::Mat& image) {
+    // Convert input image to gray
+    getGray(image, m_grayImg);
 }
 
 bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)

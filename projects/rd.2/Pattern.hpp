@@ -40,11 +40,13 @@ struct Pattern
  */
 struct PatternTrackingInfo
 {
+  bool                      homographyFound;
   cv::Mat                   homography;
   std::vector<cv::Point2f>  points2d;
   Transformation            pose3d;
 
   void draw2dContour(cv::Mat& image, cv::Scalar color) const;
+  void fill2dContour(cv::Mat& image, cv::Scalar color) const;
 
   /**
    * Compute pattern pose using PnP algorithm

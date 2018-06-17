@@ -13,26 +13,49 @@
 // File includes:
 #include "ARPipeline.hpp"
 
-ARPipeline::ARPipeline(const cv::Mat& patternImage, const CameraCalibration& calibration)
+ARPipeline::ARPipeline(const std::vector<cv::Mat>& patternImages, const CameraCalibration& calibration)
   : m_calibration(calibration)
 {
-    PatternDetector::buildPatternFromImage(&m_patternDetector, patternImage, m_pattern);
-    m_patternDetector.train(m_pattern);
+    for (size_t i = 0; i < patternImages.size(); i++) {
+
+        PatternEntity patternEntity;
+
+        PatternDetector::buildPatternFromImage(&m_patternDetector, patternImages[i], patternEntity.m_pattern);
+
+        m_patternEntities.push_back(patternEntity);
+    }
 }
 
 bool ARPipeline::processFrame(const cv::Mat& inputFrame)
 {
-  bool patternFound = m_patternDetector.findPattern(inputFrame, m_patternInfo);
+    bool anyPatternFound = false;
 
-  if (patternFound)
-  {
-    m_patternInfo.computePose(m_pattern, m_calibration);
-  }
+    // Convert input image to gray
+    m_patternDetector.getGray(inputFrame);
 
-  return patternFound;
+    for (size_t i = 0; i < m_patternEntities.size(); i++) {
+
+        m_patternDetector.train(m_patternEntities[i].m_pattern);
+
+        if (m_patternDetector.findPattern(inputFrame, m_patternEntities[i].m_patternInfo)) {
+            m_patternEntities[i].m_patternInfo.computePose(m_patternEntities[i].m_pattern, m_calibration);
+            anyPatternFound = true;
+        }
+    }
+
+    return anyPatternFound;
 }
 
-const Transformation& ARPipeline::getPatternLocation() const
-{
-  return m_patternInfo.pose3d;
+const size_t ARPipeline::getPatternsCount() const {
+    return m_patternEntities.size();
+}
+
+const bool ARPipeline::isPatternFound(const size_t index) const {
+    if (index < 0 || index >= m_patternEntities.size()) return false;
+
+    return m_patternEntities[index].m_patternInfo.homographyFound;
+}
+
+const Transformation& ARPipeline::getPatternLocation(const size_t index) const {
+    return m_patternEntities[index].m_patternInfo.pose3d;
 }

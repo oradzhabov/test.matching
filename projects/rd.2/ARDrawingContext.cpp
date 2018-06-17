@@ -137,15 +137,19 @@ void ARDrawingContext::drawAugmentedScene()
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  if (isPatternPresent)
-  {
-    // Set the pattern transformation
-    Matrix44 glMatrix = patternPose.getMat44();
-    glLoadMatrixf(reinterpret_cast<const GLfloat*>(&glMatrix.data[0]));
+  if (!patternPoses.empty()) {
 
-    // Render model
-    drawCoordinateAxis();
-    drawCubeModel();
+      for (size_t i = 0; i < patternPoses.size(); ++i) {
+          glPushMatrix();
+              // Set the pattern transformation
+              Matrix44 glMatrix = patternPoses[i].getMat44();
+              glLoadMatrixf(reinterpret_cast<const GLfloat*>(&glMatrix.data[0]));
+
+              // Render model
+              drawCoordinateAxis();
+              drawCubeModel();
+          glPopMatrix();
+      }
   }
 }
 

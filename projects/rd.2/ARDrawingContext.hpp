@@ -33,8 +33,7 @@ public:
   ~ARDrawingContext();
 
   
-  bool                isPatternPresent;
-  Transformation      patternPose;
+  std::vector<Transformation>       patternPoses;
 
 
   //! Set the new frame for the background

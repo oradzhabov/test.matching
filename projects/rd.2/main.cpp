@@ -108,7 +108,7 @@ void processVideo(const cv::Mat& patternImage, CameraCalibration& calibration, c
 
     cv::Size frameSize(currentFrame.cols, currentFrame.rows);
 
-    ARPipeline pipeline(patternImage, calibration);
+    ARPipeline pipeline({ patternImage , patternImage }, calibration);
     ARDrawingContext drawingCtx("Markerless AR", frameSize, calibration);
 
     bool shouldQuit = false;
@@ -154,11 +154,16 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     // Set a new camera frame:
     drawingCtx.updateBackground(img);
 
-    // Find a pattern and update it's detection status:
-    drawingCtx.isPatternPresent = pipeline.processFrame(cameraFrame);
+    // Find patterns:
+    pipeline.processFrame(cameraFrame);
 
-    // Update a pattern pose:
-    drawingCtx.patternPose = pipeline.getPatternLocation();
+    // Update a pattern poses:
+    drawingCtx.patternPoses.clear();
+    const size_t patternCount = pipeline.getPatternsCount();
+    for (size_t i = 0; i < patternCount; i++) {
+        if (pipeline.isPatternFound(i))
+            drawingCtx.patternPoses.push_back(pipeline.getPatternLocation(i));
+    }
 
     // Request redraw of the window:
     drawingCtx.updateWindow();
