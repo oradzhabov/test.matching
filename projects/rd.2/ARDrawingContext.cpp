@@ -95,7 +95,7 @@ void ARDrawingContext::drawCameraFrame()
   else if (m_backgroundImage.channels()==1)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_backgroundImage.data);
 
-  const GLfloat bgTextureVertices[] = { 0, 0, w, 0, 0, h, w, h };
+  const GLfloat bgTextureVertices[] = { 0, 0, static_cast<GLfloat>(w), 0, 0, static_cast<GLfloat>(h), static_cast<GLfloat>(w), static_cast<GLfloat>(h) };
   const GLfloat bgTextureCoords[]   = { 1, 0, 1, 1, 0, 0, 0, 1 };
   const GLfloat proj[]              = { 0, -2.f/w, 0, 0, -2.f/h, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1 };
 

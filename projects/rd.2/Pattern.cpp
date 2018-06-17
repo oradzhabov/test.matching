@@ -45,20 +45,20 @@ void PatternTrackingInfo::draw2dContour(cv::Mat& image, cv::Scalar color) const
   for (size_t i = 0; i < points2d.size(); i++) cv::line(image, points2d[i], points2d[ (i+1) % points2d.size() ], color, 2, CV_AA);
 }
 
-void PatternTrackingInfo::fill2dContour(cv::Mat& image, cv::Scalar color) const
-{
-    int lineType = 8;
+void PatternTrackingInfo::fill2dContour(cv::Mat& image, cv::Scalar color) const {
 
     std::vector<cv::Point> pts;
+    
     for (size_t i = 0; i < points2d.size(); i++)
-        pts.push_back(cv::Point(points2d[i].x, points2d[i].y));
+        pts.push_back(cv::Point(static_cast<int>(points2d[i].x), static_cast<int>(points2d[i].y)));
+
     const cv::Point* ppt[1] = { &pts[0] };
-    int npt[] = { points2d.size() };
+    int npt[] = { static_cast<int>(points2d.size()) };
 
     cv::fillPoly(image,
         ppt,
         npt,
         1,
         color,
-        lineType);
+        cv::LINE_8);
 }

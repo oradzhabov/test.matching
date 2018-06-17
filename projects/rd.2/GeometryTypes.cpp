@@ -31,7 +31,7 @@ Matrix44 Matrix44::identity()
   
   for (int i=0;i<4; i++)
     for (int j=0;j<4;j++)
-      eye.mat[i][j] = i == j ? 1 : 0;
+      eye.mat[i][j] = i == j ? 1.0f : 0.0f;
   
   return eye;
 }
@@ -60,7 +60,7 @@ Matrix33 Matrix33::identity()
   
   for (int i=0;i<3; i++)
     for (int j=0;j<3;j++)
-      eye.mat[i][j] = i == j ? 1 : 0;
+      eye.mat[i][j] = i == j ? 1.0f : 0.0f;
   
   return eye;
 }

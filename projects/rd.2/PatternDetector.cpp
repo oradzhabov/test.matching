@@ -65,8 +65,8 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     pattern.points3d.resize(4);
 
     // Image dimensions
-    const float w = image.cols;
-    const float h = image.rows;
+    const float w = static_cast<float>(image.cols);
+    const float h = static_cast<float>(image.rows);
 
     // Normalized dimensions:
     const float maxSize = std::max(w,h);
