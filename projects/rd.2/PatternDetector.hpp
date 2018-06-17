@@ -57,7 +57,7 @@ protected:
 
     bool extractFeatures(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) const;
 
-    void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches);
+    void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance = std::numeric_limits<float>::max(), const float & minRatio = 1.f / 1.2f);
 
     /**
     * Get the gray image from the input image.

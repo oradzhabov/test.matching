@@ -109,6 +109,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
 #if _DEBUG
     cv::Mat tmp = image.clone();
 #endif
+    std::vector<cv::DMatch> refinedMatches;
 
     // Find homography transformation and detect good matches
     bool homographyFound = refineMatchesWithHomography(
@@ -129,12 +130,9 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         {
             // Warp image using found homography
             cv::warpPerspective(m_grayImg, m_warpedImg, m_roughHomography, m_pattern.size, cv::WARP_INVERSE_MAP | cv::INTER_CUBIC);
-#if _DEBUG
-            cv::showAndSave("Warped image",m_warpedImg);
-#endif
+
             // Get refined matches:
             std::vector<cv::KeyPoint> warpedKeypoints;
-            std::vector<cv::DMatch> refinedMatches;
 
             // Detect features on warped image
             extractFeatures(m_warpedImg, warpedKeypoints, m_queryDescriptors);
@@ -146,20 +144,26 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             homographyFound = refineMatchesWithHomography(
                 warpedKeypoints, 
                 m_pattern.keypoints, 
-                homographyReprojectionThreshold, 
+                homographyReprojectionThreshold,
                 refinedMatches, 
                 CV_FM_LMEDS, // LMEDS good for preciss estmation
                 m_refinedHomography);
 
             if (!homographyFound || m_refinedHomography.empty())
                 return homographyFound;
+
 #if _DEBUG
-            cv::showAndSave("MatchesWithRefinedPose", getMatchesImage(m_warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
+            cv::showAndSave("MatchesWithWarpedPose", getMatchesImage(m_warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
 #endif
             // Get a result homography as result of matrix product of refined and rough homographies:
             info.homography = m_roughHomography * m_refinedHomography;
 
 #if _DEBUG
+            // Warp image using found refined homography
+            cv::Mat warpedRefinedImg;
+            cv::warpPerspective(m_grayImg, warpedRefinedImg, info.homography, m_pattern.size, cv::WARP_INVERSE_MAP | cv::INTER_CUBIC);
+            cv::showAndSave("Warped Refined image", warpedRefinedImg);
+
             // Transform contour with rough homography
             cv::perspectiveTransform(m_pattern.points2d, info.points2d, m_roughHomography);
             info.draw2dContour(tmp, CV_RGB(0,200,0));
@@ -188,7 +192,10 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     {
         cv::showAndSave("Final matches", getMatchesImage(tmp, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, m_matches, 100));
     }
-    std::cout << "Features:" << std::setw(4) << m_queryKeypoints.size() << " Matches: " << std::setw(4) << m_matches.size() << std::endl;
+    std::cout << "Features:" << std::setw(4) << m_queryKeypoints.size() << " Matches: " << std::setw(4) << m_matches.size();
+    if (enableHomographyRefinement)
+        std::cout << " Refined Matches: " << std::setw(4) << refinedMatches.size();
+    std::cout << std::endl;
 #endif
 
     return homographyFound;
@@ -216,15 +223,12 @@ bool PatternDetector::extractFeatures(const cv::Mat& image, std::vector<cv::KeyP
     return true;
 }
 
-void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches)
+void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance, const float & minRatio)
 {
     matches.clear();
 
     if (enableRatioTest)
     {
-        // To avoid NaN's when best match has zero distance we will use inversed ratio. 
-        const float minRatio = 1.f / 1.2f;
-        
         m_knnMatches.clear();
 
         // KNN match will return 2 nearest matches for each query descriptor
@@ -235,11 +239,12 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
             const cv::DMatch& bestMatch   = m_knnMatches[i][0];
             const cv::DMatch& betterMatch = m_knnMatches[i][1];
 
+            // To avoid NaN's when best match has zero distance we will use inversed ratio. 
             float distanceRatio = bestMatch.distance / betterMatch.distance;
             
             // Pass only matches where distance ratio between 
             // nearest matches is greater than 1.5 (distinct criteria)
-            if (distanceRatio < minRatio)
+            if (distanceRatio < minRatio && bestMatch.distance <= maxDistance)
             {
                 matches.push_back(bestMatch);
             }
