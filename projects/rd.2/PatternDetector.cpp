@@ -53,11 +53,8 @@ void PatternDetector::train(const Pattern& pattern)
     m_matcher->train();
 }
 
-void PatternDetector::buildPatternFromImage(const cv::Mat& image, Pattern& pattern) const
+void PatternDetector::buildPatternFromImage(const PatternDetector * detector, const cv::Mat& image, Pattern& pattern)
 {
-    int numImages = 4;
-    float step = sqrtf(2.0f);
-
     // Store original image in pattern structure
     pattern.size = cv::Size(image.cols, image.rows);
     pattern.frame = image.clone();
@@ -86,7 +83,7 @@ void PatternDetector::buildPatternFromImage(const cv::Mat& image, Pattern& patte
     pattern.points3d[2] = cv::Point3f( unitW,  unitH, 0);
     pattern.points3d[3] = cv::Point3f(-unitW,  unitH, 0);
 
-    extractFeatures(pattern.grayImg, pattern.keypoints, pattern.descriptors);
+    PatternDetector::extractFeatures(detector->m_detector, pattern.grayImg, pattern.keypoints, pattern.descriptors);
 }
 
 
@@ -97,7 +94,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     getGray(image, m_grayImg);
     
     // Extract feature points from input gray image
-    extractFeatures(m_grayImg, m_queryKeypoints, m_queryDescriptors);
+    extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
     
     // Get matches with current pattern
     getMatches(m_queryDescriptors, m_matches);
@@ -135,7 +132,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             std::vector<cv::KeyPoint> warpedKeypoints;
 
             // Detect features on warped image
-            extractFeatures(m_warpedImg, warpedKeypoints, m_queryDescriptors);
+            extractFeatures(m_detector, m_warpedImg, warpedKeypoints, m_queryDescriptors);
 
             // Match with pattern
             getMatches(m_queryDescriptors, refinedMatches);
@@ -211,12 +208,12 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray)
         gray = image;
 }
 
-bool PatternDetector::extractFeatures(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) const
+bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
 {
     assert(!image.empty());
     assert(image.channels() == 1);
 
-    m_detector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
+    detector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
     if (keypoints.empty())
         return false;
 

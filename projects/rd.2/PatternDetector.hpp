@@ -41,7 +41,7 @@ public:
     * Initialize Pattern structure from the input image.
     * This function finds the feature points and extract descriptors for them.
     */
-    void buildPatternFromImage(const cv::Mat& image, Pattern& pattern) const;
+    static void buildPatternFromImage(const PatternDetector * detector, const cv::Mat& image, Pattern& pattern);
 
     /**
     * Tries to find a @pattern object on given @image. 
@@ -55,7 +55,7 @@ public:
 
 protected:
 
-    bool extractFeatures(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) const;
+    static bool extractFeatures(cv::Ptr<cv::FeatureDetector> detector, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
 
     void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance = std::numeric_limits<float>::max(), const float & minRatio = 1.f / 1.2f);
 
