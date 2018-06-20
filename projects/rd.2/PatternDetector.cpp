@@ -94,7 +94,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     info.homographyFound = false;
 
     // Extract feature points from input gray image
-    extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
+    PatternDetector::extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
     
     // Get matches with current pattern
     getMatches(m_queryDescriptors, m_matches);
@@ -132,7 +132,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             std::vector<cv::KeyPoint> warpedKeypoints;
 
             // Detect features on warped image
-            extractFeatures(m_detector, m_warpedImg, warpedKeypoints, m_queryDescriptors);
+            PatternDetector::extractFeatures(m_detector, m_warpedImg, warpedKeypoints, m_queryDescriptors);
 
             // Match with pattern
             getMatches(m_queryDescriptors, refinedMatches);
