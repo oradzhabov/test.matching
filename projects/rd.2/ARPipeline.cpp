@@ -26,13 +26,13 @@ ARPipeline::ARPipeline(const std::vector<cv::Mat>& patternImages, const CameraCa
     }
 }
 
-bool ARPipeline::processFrame(const cv::Mat& inputFrame)
-{
+bool ARPipeline::processFrame(const cv::Mat& inputFrame) {
+
+    // Convert input image to gray and extract features from it
+    if (m_patternDetector.extractFeatures(inputFrame) == false)
+        return false;
+
     bool anyPatternFound = false;
-
-    // Convert input image to gray
-    m_patternDetector.getGray(inputFrame);
-
     for (size_t i = 0; i < m_patternEntities.size(); i++) {
 
         m_patternDetector.train(m_patternEntities[i].m_pattern);

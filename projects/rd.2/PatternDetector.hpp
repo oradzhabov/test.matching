@@ -32,7 +32,7 @@ public:
         bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
         );
 
-    void getGray(const cv::Mat& image);
+    bool extractFeatures(const cv::Mat& image);
     /**
     * 
     */
@@ -81,12 +81,9 @@ protected:
 private:
     std::vector<cv::KeyPoint> m_queryKeypoints;
     cv::Mat                   m_queryDescriptors;
-    std::vector<cv::DMatch>   m_matches;
     std::vector< std::vector<cv::DMatch> > m_knnMatches;
 
     cv::Mat                   m_grayImg;
-    cv::Mat                   m_warpedImg;
-    cv::Mat                   m_roughHomography;
     cv::Mat                   m_refinedHomography;
 
     Pattern                          m_pattern;

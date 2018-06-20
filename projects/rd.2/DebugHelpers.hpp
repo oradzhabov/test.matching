@@ -30,7 +30,7 @@ namespace cv
     inline void showAndSave(std::string name, const cv::Mat& m)
     {
         cv::imshow(name, m);
-        cv::imwrite(name + ".png", m);
+        //cv::imwrite(name + ".png", m);
         //cv::waitKey(25);
     }
 
