@@ -58,7 +58,8 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     // Store original image in pattern structure
     pattern.size = cv::Size(image.cols, image.rows);
     pattern.frame = image.clone();
-    getGray(image, pattern.grayImg);
+    PatternDetector::getGray(image, pattern.grayImg);
+    PatternDetector::getEdges(pattern.grayImg, pattern.grayImg);
     
     // Build 2d and 3d contours (3d contour lie in XY plane since it's planar)
     pattern.points2d.resize(4);
@@ -73,6 +74,7 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     const float unitW = w / maxSize;
     const float unitH = h / maxSize;
 
+    // ATTENTION: Direction important because uses in point insertion algs
     pattern.points2d[0] = cv::Point2f(0,0);
     pattern.points2d[1] = cv::Point2f(w,0);
     pattern.points2d[2] = cv::Point2f(w,h);
@@ -234,13 +236,38 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray) {
         gray = image;
 }
 
+void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {
+    assert(!gray.empty());
+    assert(gray.channels() == 1);
+
+    /// Generate grad_x and grad_y
+    const int       ddepth = CV_16S;
+    cv::Mat         grad_x, grad_y;
+    cv::Mat         abs_grad_x, abs_grad_y;
+
+    /// Gradient X
+    cv::Sobel(gray, grad_x, ddepth, 1, 0);
+
+    /// Gradient Y
+    cv::Sobel(gray, grad_y, ddepth, 0, 1);
+
+    // converting back to CV_8U
+    cv::convertScaleAbs(grad_x, abs_grad_x);
+    cv::convertScaleAbs(grad_y, abs_grad_y);
+
+    /// Total Gradient (approximate)
+    cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edges);
+}
+
 bool PatternDetector::extractFeatures(const cv::Mat& image) {
     assert(!image.empty());
 
     // Convert input image to gray
-    getGray(image, m_grayImg);
+    PatternDetector::getGray(image, m_grayImg);
+    // Convert gray to edges
+    PatternDetector::getEdges(m_grayImg, m_grayImg);
 
-	// Extract feature points from input gray image
+	// Extract feature points from input image
 	return PatternDetector::extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
 }
 

@@ -66,6 +66,7 @@ protected:
     * Supported input images types - 1 channel (no conversion is done), 3 channels (assuming BGR) and 4 channels (assuming BGRA).
     */
     static void getGray(const cv::Mat& image, cv::Mat& gray);
+    static void getEdges(const cv::Mat& gray, cv::Mat& edges);
 
     /**
     * 
