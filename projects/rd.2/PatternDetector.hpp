@@ -38,6 +38,10 @@ public:
     */
     void train(const Pattern& pattern);
 
+    static int ratioTest(std::vector<std::vector<cv::DMatch> > & matches, const float & minRatio);
+    static void symmetryTest(const std::vector<std::vector<cv::DMatch> >& matches1, const std::vector<std::vector<cv::DMatch> >& matches2, std::vector<cv::DMatch>& symMatches);
+    static void horizontalTest(const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, std::vector<cv::DMatch> & matches, const int imgWidth);
+
     /**
     * Initialize Pattern structure from the input image.
     * This function finds the feature points and extract descriptors for them.

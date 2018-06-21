@@ -59,7 +59,7 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     pattern.size = cv::Size(image.cols, image.rows);
     pattern.frame = image.clone();
     PatternDetector::getGray(image, pattern.grayImg);
-    PatternDetector::getEdges(pattern.grayImg, pattern.grayImg);
+    //PatternDetector::getEdges(pattern.grayImg, pattern.grayImg);
     
     // Build 2d and 3d contours (3d contour lie in XY plane since it's planar)
     pattern.points2d.resize(4);
@@ -88,7 +88,21 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     PatternDetector::extractFeatures(detector->m_detector, pattern.grayImg, pattern.keypoints, pattern.descriptors);
 }
 
+void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, std::vector<cv::DMatch> & matches, const int imgWidth) {
 
+    std::vector<cv::DMatch>     result;
+    for (size_t i = 0; i < matches.size(); i++) {
+
+        const cv::Point2f & srcPt = trainKp[matches[i].trainIdx].pt;
+        const cv::Point2f & dstPt = queryKp[matches[i].queryIdx].pt + cv::Point2f(imgWidth, 0);
+        //
+        const cv::Point2f   delta = dstPt - srcPt;
+        const float         angDegree = atan2(delta.y, delta.x) * 180 / CV_PI;
+
+        if (fabs(angDegree) < 1) result.push_back(matches[i]);
+    }
+    matches = result;
+}
 
 bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& info)
 {
@@ -141,6 +155,9 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
 
             // Match with pattern
             getMatches(warpedDescriptors, refinedMatches);
+
+            // Warped matching NEEDS to be horizontal and collinear
+            PatternDetector::horizontalTest(warpedKeypoints, m_pattern.keypoints, refinedMatches, warpedImg.cols);
 
             // Estimate new refinement homography
             info.homographyFound = refineMatchesWithHomography(
@@ -265,7 +282,7 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
     // Convert input image to gray
     PatternDetector::getGray(image, m_grayImg);
     // Convert gray to edges
-    PatternDetector::getEdges(m_grayImg, m_grayImg);
+    //PatternDetector::getEdges(m_grayImg, m_grayImg);
 
 	// Extract feature points from input image
 	return PatternDetector::extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
@@ -283,31 +300,107 @@ bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, con
     return true;
 }
 
+
+int PatternDetector::ratioTest(std::vector<std::vector<cv::DMatch> > & matches, const float & minRatio) {
+
+    int removed = 0;
+
+    // for all matches
+    for (std::vector<std::vector<cv::DMatch> >::iterator matchIterator = matches.begin(); matchIterator != matches.end(); ++matchIterator) {
+
+        // if 2 NN has been identified
+        if (matchIterator->size() > 1) {
+            // check distance ratio
+            if ((*matchIterator)[0].distance / (*matchIterator)[1].distance > minRatio) {
+                matchIterator->clear(); // remove match
+                removed++;
+            }
+        }
+        else
+        { // does not have 2 neighbours
+            matchIterator->clear(); // remove match
+            removed++;
+        }
+    }
+    return removed;
+}
+
+void PatternDetector::symmetryTest(const std::vector<std::vector<cv::DMatch> >& matches1, const std::vector<std::vector<cv::DMatch> >& matches2, std::vector<cv::DMatch>& symMatches) {
+
+    // for all matches image 1 -> image 2
+    for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches1.begin(); matchIterator1 != matches1.end(); ++matchIterator1) {
+
+        // ignore deleted matches
+        if (matchIterator1->empty() || matchIterator1->size() < 2)
+            continue;
+
+        // for all matches image 2 -> image 1
+        for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator2 = matches2.begin(); matchIterator2 != matches2.end(); ++matchIterator2) {
+            // ignore deleted matches
+            if (matchIterator2->empty() || matchIterator2->size() < 2)
+                continue;
+
+            // Match symmetry test
+            if ((*matchIterator1)[0].queryIdx ==
+                (*matchIterator2)[0].trainIdx &&
+                (*matchIterator2)[0].queryIdx ==
+                (*matchIterator1)[0].trainIdx) {
+
+                // add symmetrical match
+                symMatches.push_back( cv::DMatch((*matchIterator1)[0].queryIdx, (*matchIterator1)[0].trainIdx, (*matchIterator1)[0].distance));
+                break; // next match in image 1 -> image 2
+            }
+        }
+    }
+}
+
 void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance, const float & minRatio)
 {
     matches.clear();
 
     if (enableRatioTest)
     {
-        m_knnMatches.clear();
+        if (true) {
+            m_knnMatches.clear();
 
-        // KNN match will return 2 nearest matches for each query descriptor
-        m_matcher->knnMatch(queryDescriptors, m_knnMatches, 2);
+            // KNN match will return 2 nearest matches for each query descriptor
+            m_matcher->knnMatch(queryDescriptors, m_knnMatches, 2);
 
-        for (size_t i=0; i<m_knnMatches.size(); i++)
-        {
-            const cv::DMatch& bestMatch   = m_knnMatches[i][0];
-            const cv::DMatch& betterMatch = m_knnMatches[i][1];
-
-            // To avoid NaN's when best match has zero distance we will use inversed ratio. 
-            float distanceRatio = bestMatch.distance / betterMatch.distance;
-            
-            // Pass only matches where distance ratio between 
-            // nearest matches is greater than 1.5 (distinct criteria)
-            if (distanceRatio < minRatio && bestMatch.distance <= maxDistance)
+            for (size_t i = 0; i < m_knnMatches.size(); i++)
             {
-                matches.push_back(bestMatch);
+                const cv::DMatch& bestMatch = m_knnMatches[i][0];
+                const cv::DMatch& betterMatch = m_knnMatches[i][1];
+
+                // To avoid NaN's when best match has zero distance we will use inversed ratio. 
+                float distanceRatio = bestMatch.distance / betterMatch.distance;
+
+                // Pass only matches where distance ratio between 
+                // nearest matches is greater than 1.5 (distinct criteria)
+                if (distanceRatio < minRatio && bestMatch.distance <= maxDistance)
+                {
+                    matches.push_back(bestMatch);
+                }
             }
+        }
+        else { // Good because use max filter tests, but bad because works only for 1-train per 1-query
+            std::vector<std::vector<cv::DMatch> > matches12, matches21;
+
+            const std::vector<cv::Mat> trainDescriptors = m_matcher->getTrainDescriptors();
+
+            // From image 1 to image 2
+            m_matcher->knnMatch(queryDescriptors, trainDescriptors[0], matches12, 2); // return 2 nearest neighbours
+
+            // From image 2 to image 1
+            m_matcher->knnMatch(trainDescriptors[0], queryDescriptors, matches21, 2); // return 2 nearest neighbours
+
+            // Remove matches for which NN ratio is > than threshold
+            // clean image 1 -> image 2 matches
+            ratioTest(matches12, minRatio);
+            // clean image 2 -> image 1 matches
+            ratioTest(matches21, minRatio);
+
+            // 4. Remove non-symmetrical matches
+            symmetryTest(matches12, matches21, matches);
         }
     }
     else

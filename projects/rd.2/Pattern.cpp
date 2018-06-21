@@ -19,7 +19,9 @@ void PatternTrackingInfo::computePose(const Pattern& pattern, const CameraCalibr
   cv::Mat_<float> Tvec;
   cv::Mat raux,taux;
 
-  cv::solvePnP(pattern.points3d, points2d, calibration.getIntrinsic(), calibration.getDistorsion(),raux,taux);
+  bool useExtrinsicGuess = false;   // if true the function uses the provided rvec and tvec values as
+                                    // initial approximations of the rotation and translation vectors
+  cv::solvePnP(pattern.points3d, points2d, calibration.getIntrinsic(), calibration.getDistorsion(),raux,taux, useExtrinsicGuess, cv::SOLVEPNP_ITERATIVE);
   raux.convertTo(Rvec,CV_32F);
   taux.convertTo(Tvec ,CV_32F);
 
