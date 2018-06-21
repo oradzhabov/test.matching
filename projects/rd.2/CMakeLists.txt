@@ -8,6 +8,7 @@ SET(SOURCE
 	ARPipeline.cpp
 	Pattern.cpp
 	PatternDetector.cpp
+	RobustMatcher.cpp
 )
 
 SET(HEADERS
@@ -18,6 +19,7 @@ SET(HEADERS
 	ARPipeline.hpp
 	Pattern.hpp
 	DebugHelpers.hpp
+	RobustMatcher.h
 )
 
 
