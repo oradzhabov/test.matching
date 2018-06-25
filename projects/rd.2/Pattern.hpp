@@ -43,6 +43,7 @@ struct PatternTrackingInfo
   bool                      homographyFound;
   cv::Mat                   homography;
   std::vector<cv::Point2f>  points2d;
+  Transformation            pose3dInv;
   Transformation            pose3d;
 
   void draw2dContour(cv::Mat& image, cv::Scalar color) const;

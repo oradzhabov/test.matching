@@ -21,18 +21,23 @@
 #include <gl/gl.h>
 #include <gl/glu.h>
 
+//
+#include <filesystem>
+
+namespace fs = std::experimental::filesystem;
+
 /**
  * Processes a recorded video or live view from web-camera and allows you to adjust homography refinement and 
  * reprojection threshold in runtime.
  */
-void processVideo(const cv::Mat& patternImage, CameraCalibration& calibration, cv::VideoCapture& capture);
+void processVideo(const std::vector<cv::Mat>& patternImages, CameraCalibration& calibration, cv::VideoCapture& capture);
 
 /**
  * Processes single image. The processing goes in a loop.
  * It allows you to control the detection process by adjusting homography refinement switch and 
  * reprojection threshold in runtime.
  */
-void processSingleImage(const cv::Mat& patternImage, CameraCalibration& calibration, const cv::Mat& image);
+void processSingleImage(const std::vector<cv::Mat>& patternImages, CameraCalibration& calibration, const cv::Mat& image);
 
 /**
  * Performs full detection routine on camera frame and draws the scene using drawing context.
@@ -50,22 +55,40 @@ int main(int argc, const char * argv[])
     if (argc < 2)
     {
         std::cout << "Input image not specified" << std::endl;
-        std::cout << "Usage: markerless_ar_demo <pattern image> [filepath to recorded video or image]" << std::endl;
+        std::cout << "Usage: markerless_ar_demo <pattern list file> [filepath to recorded video or image]" << std::endl;
         return 1;
     }
 
-    // Try to read the pattern:
-    cv::Mat patternImage = cv::imread(argv[1]);
-    if (patternImage.empty())
-    {
-        std::cout << "Input image cannot be read" << std::endl;
+    // Try to read the pattern(s):
+    std::vector<cv::Mat>    patternImages;
+    const fs::path          patternList(argv[1]);
+    const std::wstring      ext = patternList.extension().c_str();
+    if (ext != L".txt") {
+        std::cout << "Input param is not a patternlist" << std::endl;
         return 2;
+    }
+    //
+    // Read files line by line
+    std::ifstream patternListFile(argv[1]);
+    std::string patternImageName;
+    while (std::getline(patternListFile, patternImageName)) {
+            
+        fs::path fullPath = patternList.parent_path();
+        fullPath += fs::path("\\");
+        fullPath += fs::path(patternImageName);
+        //
+        const std::wstring ws = fullPath.c_str();
+        const std::string s(ws.begin(), ws.end());
+        //
+        cv::Mat img = cv::imread(s);
+        if (!img.empty())
+            patternImages.push_back(img);
     }
 
     if (argc == 2)
     {
         cv::VideoCapture cap(0);
-        processVideo(patternImage, calibration, cap);
+        processVideo(patternImages, calibration, cap);
     }
     else if (argc == 3)
     {
@@ -73,14 +96,14 @@ int main(int argc, const char * argv[])
         cv::Mat testImage = cv::imread(input);
         if (!testImage.empty())
         {
-            processSingleImage(patternImage, calibration, testImage);
+            processSingleImage(patternImages, calibration, testImage);
         }
         else 
         {
             cv::VideoCapture cap;
             if (cap.open(input))
             {
-                processVideo(patternImage, calibration, cap);
+                processVideo(patternImages, calibration, cap);
             }
         }
     }
@@ -93,7 +116,7 @@ int main(int argc, const char * argv[])
     return 0;
 }
 
-void processVideo(const cv::Mat& patternImage, CameraCalibration& calibration, cv::VideoCapture& capture)
+void processVideo(const std::vector<cv::Mat>& patternImages, CameraCalibration& calibration, cv::VideoCapture& capture)
 {
     // Grab first frame to get the frame dimensions
     cv::Mat currentFrame;  
@@ -108,7 +131,7 @@ void processVideo(const cv::Mat& patternImage, CameraCalibration& calibration, c
 
     cv::Size frameSize(currentFrame.cols, currentFrame.rows);
 
-    ARPipeline pipeline({ patternImage , patternImage }, calibration);
+    ARPipeline pipeline(patternImages, calibration);
     ARDrawingContext drawingCtx("Markerless AR", frameSize, calibration);
 
     bool shouldQuit = false;
@@ -125,10 +148,10 @@ void processVideo(const cv::Mat& patternImage, CameraCalibration& calibration, c
     } while (!shouldQuit);
 }
 
-void processSingleImage(const cv::Mat& patternImage, CameraCalibration& calibration, const cv::Mat& image)
+void processSingleImage(const std::vector<cv::Mat>& patternImages, CameraCalibration& calibration, const cv::Mat& image)
 {
     cv::Size frameSize(image.cols, image.rows);
-    ARPipeline pipeline(patternImage, calibration);
+    ARPipeline pipeline(patternImages, calibration);
     ARDrawingContext drawingCtx("Markerless AR", frameSize, calibration);
 
     bool shouldQuit = false;
@@ -157,7 +180,7 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     // Find patterns:
     pipeline.processFrame(cameraFrame);
 
-    // Update a pattern poses:
+    // Update a patterns poses found during frame processing:
     drawingCtx.patternPoses.clear();
     const size_t patternCount = pipeline.getPatternsCount();
     for (size_t i = 0; i < patternCount; i++) {
