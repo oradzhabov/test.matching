@@ -1,26 +1,14 @@
+file(GLOB RD2_SOURCES	"*.cpp")
+file(GLOB RD2_HEADERS	"*.h" "*.hpp")
+
+
+source_group("" FILES ${RD2_SOURCES} ${RD2_HEADERS})
+source_group("Source Files" FILES "main.cpp")
+source_group("Source Files\\Common" FILES "GeometryTypes.hpp" "GeometryTypes.cpp" "DebugHelpers.hpp")
+source_group("Source Files\\ImgMatcher" FILES "RobustMatcher.h" "RobustMatcher.cpp" "Pattern.hpp" "Pattern.cpp" "ARPipeline.hpp" "ARPipeline.cpp" "CameraCalibration.hpp" "CameraCalibration.cpp" "PatternDetector.hpp" "PatternDetector.cpp")
+source_group("Source Files\\OpenGL" FILES "ARDrawingContext.hpp" "ARDrawingContext.cpp")
+
 include_directories(${OpenCV_INCLUDE_DIR})
-
-SET(SOURCE
-	ARDrawingContext.cpp
-	CameraCalibration.cpp
-	GeometryTypes.cpp
-	main.cpp
-	ARPipeline.cpp
-	Pattern.cpp
-	PatternDetector.cpp
-	RobustMatcher.cpp
-)
-
-SET(HEADERS
-	PatternDetector.hpp
-	ARDrawingContext.hpp
-	CameraCalibration.hpp
-	GeometryTypes.hpp
-	ARPipeline.hpp
-	Pattern.hpp
-	DebugHelpers.hpp
-	RobustMatcher.h
-)
 
 
 include_directories(${OpenCV_INCLUDE_DIRS})
@@ -30,7 +18,8 @@ include_directories("./")
 #
 # Do not using the Flag WIN32 makes app as Console instead of Windows
 #
-add_executable(rd.2 ${SOURCE} ${HEADERS})
+add_executable(rd.2 ${RD2_SOURCES} ${RD2_HEADERS})
+
 
 add_definitions(
 	-DUSE_PPL

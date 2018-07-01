@@ -94,10 +94,10 @@ void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, c
     for (size_t i = 0; i < matches.size(); i++) {
 
         const cv::Point2f & srcPt = trainKp[matches[i].trainIdx].pt;
-        const cv::Point2f & dstPt = queryKp[matches[i].queryIdx].pt + cv::Point2f(imgWidth, 0);
+        const cv::Point2f & dstPt = queryKp[matches[i].queryIdx].pt + cv::Point2f(static_cast<float>(imgWidth), 0.0f);
         //
         const cv::Point2f   delta = dstPt - srcPt;
-        const float         angDegree = atan2(delta.y, delta.x) * 180 / CV_PI;
+        const double        angDegree = atan2(delta.y, delta.x) * 180 / CV_PI;
 
         if (fabs(angDegree) < 1) result.push_back(matches[i]);
     }
