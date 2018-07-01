@@ -17,6 +17,7 @@
 #include "Pattern.hpp"
 
 #include <opencv2/opencv.hpp>
+#include <OppColorDescriptorExtractor.h>
 
 class PatternDetector
 {
@@ -27,9 +28,13 @@ public:
     PatternDetector
     (
         //cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
-        //cv::Ptr<cv::FeatureDetector>     detector = cv::BRISK::create(30),
-        cv::Ptr<cv::FeatureDetector>     detector = cv::AKAZE::create(), // AKAZE more accurately than BRISK
-        cv::Ptr<cv::DescriptorMatcher>   matcher = new cv::BFMatcher(cv::NORM_HAMMING, false),
+        //
+        //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(),
+        //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
+        //
+        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(), // AKAZE more accurately than BRISK
+        cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
+        cv::Ptr<cv::DescriptorMatcher>      matcher = new cv::BFMatcher(cv::NORM_HAMMING, false),
         bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
         );
 
@@ -61,9 +66,9 @@ public:
 
 protected:
 
-    static bool extractFeatures(cv::Ptr<cv::FeatureDetector> detector, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
+    static bool extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
 
-    void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance = std::numeric_limits<float>::max(), const float & minRatio = 1.f / 1.2f);
+    void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & minRatio = 1.f / 1.2f, const float & maxDistance = std::numeric_limits<float>::max());
 
     /**
     * Get the gray image from the input image.
@@ -94,6 +99,7 @@ private:
 
     Pattern                          m_pattern;
     cv::Ptr<cv::FeatureDetector>     m_detector;
+    cv::Ptr<cv::DescriptorExtractor>    m_extractor;
     cv::Ptr<cv::DescriptorMatcher>   m_matcher;
 };
 

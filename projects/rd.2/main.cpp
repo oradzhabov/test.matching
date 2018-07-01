@@ -181,27 +181,7 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     // Find patterns:
     pipeline.processFrame(cameraFrame);
 
-    std::vector<PortraitObs>    obsPortraits = PortraitObsBuilder::create(pipeline);
-    double                      minDist = std::numeric_limits<double>::max();
-    int                         nearestPtnInd = -1;
-    for (int i = 0; i < obsPortraits.size(); i++) {
-        double length = cv::norm(obsPortraits[i].m_position, cv::NORM_L2);
-        if (length < minDist) {
-            minDist = length;
-            nearestPtnInd = i;
-        }
-    }
-    if (nearestPtnInd >= 0) {
-        cv::Mat zeroPnt = cv::Mat::zeros(1, 4, CV_32F); zeroPnt.at<float>(0, 3) = 1;
-        for (int i = 0; i < obsPortraits[nearestPtnInd].m_K12.size(); ++i) {
-
-            cv::Mat pos = zeroPnt * obsPortraits[nearestPtnInd].m_K12[i];
-
-            if (true) // show relative pos
-                std::cout << pos << std::endl;
-            //printf("Nearest Distance: %.2f\tFrom nearest to second: %.2f\n", minDist, cv::norm(cv::Mat(1,3,CV_32F, pos.data), cv::NORM_L2));
-        }
-    }
+    PortraitObsBuilder::Test(PortraitObsBuilder::create(pipeline));
 
     // Update a patterns poses found during frame processing:
     drawingCtx.patternPoses.clear();

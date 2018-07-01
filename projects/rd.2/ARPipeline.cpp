@@ -24,6 +24,8 @@ ARPipeline::ARPipeline(const std::vector<cv::Mat>& patternImages, const CameraCa
 
         m_patternEntities.push_back(patternEntity);
     }
+    if (m_patternEntities.empty())
+        std::cout << "Attention - No one pattern images had not been loaded" << std::endl;
 }
 
 bool ARPipeline::processFrame(const cv::Mat& inputFrame) {

@@ -22,10 +22,12 @@
 #include <iomanip>
 #include <cassert>
 
-PatternDetector::PatternDetector(cv::Ptr<cv::FeatureDetector> detector, 
+PatternDetector::PatternDetector(cv::Ptr<cv::FeatureDetector> detector,
+    cv::Ptr<cv::DescriptorExtractor> extractor,
     cv::Ptr<cv::DescriptorMatcher> matcher, 
     bool ratioTest)
     : m_detector(detector)
+    , m_extractor(extractor)
     , m_matcher(matcher)
     , enableRatioTest(ratioTest)
     , enableHomographyRefinement(true)
@@ -85,7 +87,7 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     pattern.points3d[2] = cv::Point3f( unitW,  unitH, 0);
     pattern.points3d[3] = cv::Point3f(-unitW,  unitH, 0);
 
-    PatternDetector::extractFeatures(detector->m_detector, pattern.grayImg, pattern.keypoints, pattern.descriptors);
+    PatternDetector::extractFeatures(detector->m_detector, detector->m_extractor, pattern.grayImg, pattern.frame, pattern.keypoints, pattern.descriptors);
 }
 
 void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, std::vector<cv::DMatch> & matches, const int imgWidth) {
@@ -141,17 +143,22 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         // If homography refinement enabled improve found transformation
         if (enableHomographyRefinement)
         {
-			cv::Mat                   warpedImg;
+            const int               warpFlags = cv::WARP_INVERSE_MAP | cv::INTER_CUBIC;
+			cv::Mat                 warpedImg;
+            cv::Mat                 warpedImgBGR;
 
             // Warp image using found homography
-            cv::warpPerspective(m_grayImg, warpedImg, roughHomography, m_pattern.size, cv::WARP_INVERSE_MAP | cv::INTER_CUBIC);
+            cv::warpPerspective(m_grayImg, warpedImg, roughHomography, m_pattern.size, warpFlags);
+            // Prepare colored warp if necessary
+            if (m_extractor->getDefaultName() == OppColorDescriptorExtractor::DefaultName)
+                cv::warpPerspective(image, warpedImgBGR, roughHomography, m_pattern.size, warpFlags);
 
             // Get refined matches:
             std::vector<cv::KeyPoint>	warpedKeypoints;
 			cv::Mat						warpedDescriptors;
 
             // Detect features on warped image
-            PatternDetector::extractFeatures(m_detector, warpedImg, warpedKeypoints, warpedDescriptors);
+            PatternDetector::extractFeatures(m_detector, m_extractor, warpedImg, warpedImgBGR, warpedKeypoints, warpedDescriptors);
 
             // Match with pattern
             getMatches(warpedDescriptors, refinedMatches);
@@ -285,17 +292,29 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
     //PatternDetector::getEdges(m_grayImg, m_grayImg);
 
 	// Extract feature points from input image
-	return PatternDetector::extractFeatures(m_detector, m_grayImg, m_queryKeypoints, m_queryDescriptors);
+    return PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors);
 }
 
-bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
+bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
 {
-    assert(!image.empty());
-    assert(image.channels() == 1);
+    assert(!imageGray.empty());
+    assert(imageGray.channels() == 1);
 
-    detector->detectAndCompute(image, cv::Mat(), keypoints, descriptors);
-    if (keypoints.empty())
+    detector->detect(imageGray, keypoints);
+    if (keypoints.empty()) {
+        printf("1\n");
         return false;
+    }
+
+    if (extractor->getDefaultName() == OppColorDescriptorExtractor::DefaultName)
+        extractor->compute(image, keypoints, descriptors);
+    else
+        extractor->compute(imageGray, keypoints, descriptors);
+
+    if (descriptors.empty()) {
+        printf("2\n");
+        return false;
+    }
 
     return true;
 }
@@ -354,7 +373,7 @@ void PatternDetector::symmetryTest(const std::vector<std::vector<cv::DMatch> >& 
     }
 }
 
-void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & maxDistance, const float & minRatio)
+void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & minRatio, const float & maxDistance)
 {
     matches.clear();
 

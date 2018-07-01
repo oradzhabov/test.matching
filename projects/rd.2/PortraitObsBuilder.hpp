@@ -10,6 +10,8 @@
 class PortraitObsBuilder {
 public:
     static std::vector<PortraitObs> create(const ARPipeline & );
+
+    static void Test(const std::vector<PortraitObs> &);
 };
 
 #endif // PORTRAITOBSBUILDER_HPP
