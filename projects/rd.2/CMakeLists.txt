@@ -7,6 +7,7 @@ source_group("Source Files" FILES "main.cpp")
 source_group("Source Files\\Common" FILES "GeometryTypes.hpp" "GeometryTypes.cpp" "DebugHelpers.hpp")
 source_group("Source Files\\ImgMatcher" FILES "RobustMatcher.h" "RobustMatcher.cpp" "Pattern.hpp" "Pattern.cpp" "ARPipeline.hpp" "ARPipeline.cpp" "CameraCalibration.hpp" "CameraCalibration.cpp" "PatternDetector.hpp" "PatternDetector.cpp")
 source_group("Source Files\\OpenGL" FILES "ARDrawingContext.hpp" "ARDrawingContext.cpp")
+source_group("Source Files\\Portrait" FILES "PortraitObs.hpp" "PortraitObs.cpp" "PortraitObsBuilder.hpp" "PortraitObsBuilder.cpp")
 
 include_directories(${OpenCV_INCLUDE_DIR})
 

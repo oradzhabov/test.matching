@@ -56,6 +56,6 @@ const bool ARPipeline::isPatternFound(const size_t index) const {
     return m_patternEntities[index].m_patternInfo.homographyFound;
 }
 
-const Transformation& ARPipeline::getPatternLocation(const size_t index) const {
-    return m_patternEntities[index].m_patternInfo.pose3d;
+const PatternTrackingInfo& ARPipeline::getPatternInfo(const size_t index) const {
+    return m_patternEntities[index].m_patternInfo;
 }

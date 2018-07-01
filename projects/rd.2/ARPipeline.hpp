@@ -30,9 +30,12 @@ public:
 
   bool processFrame(const cv::Mat& inputFrame);
 
+  /*
+  * @brief: Return number of patterns which have been prepared for searching by this object of class.
+  */
   const size_t          getPatternsCount() const;
   const bool            isPatternFound(const size_t index) const;
-  const Transformation& getPatternLocation(const size_t index) const;
+  const PatternTrackingInfo& getPatternInfo(const size_t index) const;
 
   PatternDetector     m_patternDetector;
 private:
