@@ -29,11 +29,11 @@ public:
     (
         //cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
         //
-        //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(),
+        //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(60),
         //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
         //
-        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(), // AKAZE more accurately than BRISK
-        cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
+        cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(), // AKAZE more accurately than BRISK, but BRISK faster and good for first approach
+        cv::Ptr<cv::DescriptorExtractor>    extractor = cv::BRISK::create(),
         cv::Ptr<cv::DescriptorMatcher>      matcher = new cv::BFMatcher(cv::NORM_HAMMING, false),
         bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
         );

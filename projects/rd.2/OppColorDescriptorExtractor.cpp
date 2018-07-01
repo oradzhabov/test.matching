@@ -19,25 +19,25 @@ static void convertBGRImageToOpponentColorSpace(const Mat& bgrImage, vector<Mat>
 		CV_Error(CV_StsBadArg, "input image must be an BGR image of type CV_8UC3");
 
     {
-        cv::split(bgrImage, opponentChannels);
-        /*
+        //cv::split(bgrImage, opponentChannels);
+        
         cv::Mat diffSpaceImg;
-        //cv::cvtColor(bgrImage, diffSpaceImg, CV_BGR2HSV); // For HSV, Hue range is [0,179], Saturation range is [0,255] and Value range is [0,255]
-        cv::cvtColor(bgrImage, diffSpaceImg, CV_BGR2Luv);
+        cv::cvtColor(bgrImage, diffSpaceImg, CV_BGR2HSV); // For HSV, Hue range is [0,179], Saturation range is [0,255] and Value range is [0,255]
+        //cv::cvtColor(bgrImage, diffSpaceImg, CV_BGR2Luv);
         cv::split(diffSpaceImg, opponentChannels);
-        //opponentChannels[0] *= 255.0 / 179.0;
+        opponentChannels[0] *= 255.0 / 179.0;
 
-        //opponentChannels[0] = 0;
-        opponentChannels[1] = 0;
-        opponentChannels[2] = 0;
-        if (true)
+        opponentChannels[0] = 0;
+        //opponentChannels[1] = 0;
+        //opponentChannels[2] = 0;
+        if (false)
         {
             double min, max;
             cv::minMaxLoc(opponentChannels[0], &min, &max);
             cv::minMaxLoc(opponentChannels[1], &min, &max);
             cv::minMaxLoc(opponentChannels[2], &min, &max);
         }
-        */
+
         return;
     }
 

@@ -117,7 +117,8 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     getMatches(m_queryDescriptors, matches);
 
 #if _DEBUG
-    cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
+    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
+    //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
 #endif
 
 #if _DEBUG
@@ -258,6 +259,14 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray) {
         cv::cvtColor(image, gray, CV_BGRA2GRAY);
     else if (image.channels() == 1)
         gray = image;
+
+    // Sharp image
+    // Greatest improved feature detecting/extracting
+    // Moreover, the simpliest case: kernel=3 demostrates the best influence
+    cv::Mat tmp;
+    cv::GaussianBlur(gray, tmp, cv::Size(0, 0), 3);
+    cv::addWeighted(gray, 2.1, tmp, -1.1, 0, tmp);
+    gray = tmp;
 }
 
 void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {

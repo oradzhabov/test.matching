@@ -1,2 +1,3 @@
 style-2.jpg
 style-3.jpg
+style-4.png
