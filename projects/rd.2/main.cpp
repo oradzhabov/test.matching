@@ -50,8 +50,8 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
 int main(int argc, const char * argv[])
 {
     // Change this calibration to yours:
-    //CameraCalibration calibration(526.58037684199849f, 524.65577209994706f, 318.41744018680112f, 202.96659047014398f);
-    CameraCalibration calibration(726.58037684199849f, 724.65577209994706f, 320.0f, 240.0f);
+    // Note: Simply way to found calib params - http://w3.impa.br/~zang/qtcalib/nochess.html
+    CameraCalibration calibration(726, 726, 320.0f, 240.0f); // My Home WebCam
     
     if (argc < 2)
     {
@@ -182,10 +182,10 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     pipeline.processFrame(cameraFrame);
 
     std::vector<PortraitObs>    obsPortraits = PortraitObsBuilder::create(pipeline);
-    float                       minDist = std::numeric_limits<float>::max();
+    double                      minDist = std::numeric_limits<double>::max();
     int                         nearestPtnInd = -1;
     for (int i = 0; i < obsPortraits.size(); i++) {
-        float length = cv::norm(obsPortraits[i].m_position, cv::NORM_L2);
+        double length = cv::norm(obsPortraits[i].m_position, cv::NORM_L2);
         if (length < minDist) {
             minDist = length;
             nearestPtnInd = i;
@@ -194,8 +194,12 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     if (nearestPtnInd >= 0) {
         cv::Mat zeroPnt = cv::Mat::zeros(1, 4, CV_32F); zeroPnt.at<float>(0, 3) = 1;
         for (int i = 0; i < obsPortraits[nearestPtnInd].m_K12.size(); ++i) {
+
             cv::Mat pos = zeroPnt * obsPortraits[nearestPtnInd].m_K12[i];
-            printf("Nearest Distance: %.2f\tFrom nearest to second: %.2f\n", minDist, cv::norm(cv::Mat(1,3,CV_32F, pos.data), cv::NORM_L2));
+
+            if (true) // show relative pos
+                std::cout << pos << std::endl;
+            //printf("Nearest Distance: %.2f\tFrom nearest to second: %.2f\n", minDist, cv::norm(cv::Mat(1,3,CV_32F, pos.data), cv::NORM_L2));
         }
     }
 

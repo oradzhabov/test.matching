@@ -14,11 +14,13 @@ std::vector<PortraitObs> PortraitObsBuilder::create(const ARPipeline & pipeline)
             foundPatterns.push_back(pipeline.getPatternInfo(i));
     }
 
-    //
+    // 
+    result.resize(foundPatterns.size());
     for (size_t i = 0; i < foundPatterns.size(); i++) {
         std::vector<PatternTrackingInfo> foundPatternsExceptMe = foundPatterns;
         foundPatternsExceptMe.erase(foundPatternsExceptMe.begin() + i);
-        result.push_back(PortraitObs(foundPatterns[i], foundPatternsExceptMe));
+
+        result[i].Build(foundPatterns[i], foundPatternsExceptMe);
     }
 
 

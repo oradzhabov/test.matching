@@ -33,13 +33,13 @@ void PatternTrackingInfo::computePose(const Pattern& pattern, const CameraCalibr
   {
     for (int row=0; row<3; row++)
     {        
-        pose3dInv.r().mat[row][col] = rotMat(row,col); // Copy rotation component
+        pose3d.r().mat[row][col] = rotMat(row,col); // Copy rotation component
     }
-    pose3dInv.t().data[col] = Tvec(col); // Copy translation component
+    pose3d.t().data[col] = Tvec(col); // Copy translation component
   }
 
   // Since solvePnP finds camera location, w.r.t to marker pose, to get marker pose w.r.t to the camera we invert it.
-  pose3d = pose3dInv.getInverted();
+  pose3d = pose3d.getInverted();
 }
 
 void PatternTrackingInfo::draw2dContour(cv::Mat& image, cv::Scalar color) const

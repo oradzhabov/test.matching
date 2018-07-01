@@ -10,7 +10,7 @@ public:
     std::vector<cv::Mat_<float>>    m_K12; // Transofrmation matrices from current pattern location
 public:
 
-    PortraitObs (PatternTrackingInfo &, std::vector<PatternTrackingInfo> &);
+    void Build(PatternTrackingInfo &, std::vector<PatternTrackingInfo> &);
 };
 
 #endif // PORTRAITOBS_HPP
