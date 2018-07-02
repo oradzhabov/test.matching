@@ -150,6 +150,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             const int               warpFlags = cv::WARP_INVERSE_MAP | cv::INTER_LINEAR;
 			cv::Mat                 warpedImg;
             cv::Mat                 warpedImgBGR;
+            cv::Mat                 refinedHomography;
 
             // Warp image using found homography
             cv::warpPerspective(m_grayImg, warpedImg, roughHomography, m_pattern.size, warpFlags);
@@ -177,16 +178,16 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 homographyReprojectionThreshold,
                 refinedMatches, 
                 CV_FM_LMEDS, // LMEDS good for preciss estmation
-                m_refinedHomography);
+                refinedHomography);
 
-            if (!info.homographyFound || m_refinedHomography.empty())
+            if (!info.homographyFound || refinedHomography.empty())
                 return info.homographyFound;
 
 #if _DEBUG
             cv::showAndSave("MatchesWithWarpedPose", getMatchesImage(warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
 #endif
             // Get a result homography as result of matrix product of refined and rough homographies:
-            info.homography = roughHomography * m_refinedHomography;
+            info.homography = roughHomography * refinedHomography;
 
 #if _DEBUG
             // Warp image using found refined homography
@@ -314,21 +315,33 @@ bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv:
     assert(!imageGray.empty());
     assert(imageGray.channels() == 1);
 
+    // Found keypoints
     detector->detect(imageGray, keypoints);
-    if (keypoints.empty()) {
-        printf("1\n");
-        return false;
+
+    if (false) { // useful for BRISK detectors only
+
+        // Filter keypoints by quality
+        std::vector<cv::KeyPoint> keypointsFiltered;
+        for (size_t i = 0; i < keypoints.size(); i++)
+            if (keypoints[i].response > 70)
+                keypointsFiltered.push_back(keypoints[i]);
+
+        // If filtering have any sense, swap them to result keypoints
+        if (!keypointsFiltered.empty())
+            keypointsFiltered.swap(keypoints);
+
+        if (keypoints.empty())
+            return false;
     }
 
+    // Extract descriptors
     if (extractor->getDefaultName() == OppColorDescriptorExtractor::DefaultName)
         extractor->compute(image, keypoints, descriptors);
     else
         extractor->compute(imageGray, keypoints, descriptors);
 
-    if (descriptors.empty()) {
-        printf("2\n");
+    if (descriptors.empty())
         return false;
-    }
 
     return true;
 }
@@ -453,7 +466,7 @@ bool PatternDetector::refineMatchesWithHomography
     cv::Mat& homography
     )
 {
-    const int minNumberMatchesAllowed = 8;
+    const int minNumberMatchesAllowed = 4;
 
     if (matches.size() < minNumberMatchesAllowed)
         return false;
