@@ -9,6 +9,9 @@
 *   http://www.packtpub.com/cool-projects-with-opencv/book
 *****************************************************************************/
 
+// todo: maybe good idea - optflow for tracking
+// http://answers.opencv.org/question/51749/c-video-stabilization-pipeline-i-certainly-missed-something/
+
 ////////////////////////////////////////////////////////////////////
 // File includes:
 #include "PatternDetector.hpp"
@@ -144,7 +147,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         // If homography refinement enabled improve found transformation
         if (enableHomographyRefinement)
         {
-            const int               warpFlags = cv::WARP_INVERSE_MAP | cv::INTER_CUBIC;
+            const int               warpFlags = cv::WARP_INVERSE_MAP | cv::INTER_LINEAR;
 			cv::Mat                 warpedImg;
             cv::Mat                 warpedImgBGR;
 
@@ -260,13 +263,15 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray) {
     else if (image.channels() == 1)
         gray = image;
 
+
     // Sharp image
     // Greatest improved feature detecting/extracting
     // Moreover, the simpliest case: kernel=3 demostrates the best influence
     cv::Mat tmp;
     cv::GaussianBlur(gray, tmp, cv::Size(0, 0), 3);
     cv::addWeighted(gray, 2.1, tmp, -1.1, 0, tmp);
-    gray = tmp;
+    //gray = tmp;
+    cv::blur(tmp, gray, cv::Size(3, 3));
 }
 
 void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {
