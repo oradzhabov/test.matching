@@ -118,7 +118,17 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     // Get matches with current pattern
     std::vector<cv::DMatch>     matches;
     getMatches(m_queryDescriptors, matches);
-
+    
+    {
+        cv::Mat tmp;
+        // Draw the keypoints with scale and orientation information
+        cv::drawKeypoints(image,		// original image
+            m_queryKeypoints,					// vector of keypoints
+            tmp,				// the resulting image
+            cv::Scalar(0, 255, 0),	// color of the points
+            cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); //drawing flag
+        cv::imshow("tmp", tmp);
+    }
 #if _DEBUG
     cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
     //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
@@ -161,7 +171,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             homographyReprojectionThreshold,
             matches,
             CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
-            roughHomography, 4);
+            roughHomography, 20); // as less this count as faster algorithm and vice versa - as bigger - as more accurately
     }
         
     if (info.homographyFound)

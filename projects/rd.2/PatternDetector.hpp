@@ -30,7 +30,11 @@ public:
         //cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
         //
         //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(60),
+        //cv::Ptr<cv::FeatureDetector>        extractor = cv::BRISK::create(),
         //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
+        //
+        //cv::Ptr<cv::FeatureDetector>        detector = cv::MSER::create(),
+        //cv::Ptr<cv::DescriptorExtractor>        extractor = cv::BRISK::create(),
         //
         // // AKAZE more accurately than BRISK(Binary Robust Invariant Scalable Keypoints), but BRISK faster and good for first approach
         cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam. todo: really?*/),

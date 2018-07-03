@@ -82,8 +82,16 @@ int main(int argc, const char * argv[])
         const std::string s(ws.begin(), ws.end());
         //
         cv::Mat img = cv::imread(s);
-        if (!img.empty())
+        if (!img.empty()) {
+            /*
+            cv::Mat tmp;
+            double sc = 0.5;
+            cv::resize(img, tmp, cv::Size((double)img.cols * sc, (double)img.rows * sc));
+            img = tmp;
+            */
+
             patternImages.push_back(img);
+        }
     }
 
     if (argc == 2)
