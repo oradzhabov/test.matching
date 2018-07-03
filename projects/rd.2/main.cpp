@@ -181,7 +181,7 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     // Find patterns:
     pipeline.processFrame(cameraFrame);
 
-    PortraitObsBuilder::Test(PortraitObsBuilder::create(pipeline));
+    //PortraitObsBuilder::Test(PortraitObsBuilder::create(pipeline));
 
     // Update a patterns poses found during frame processing:
     drawingCtx.patternPoses.clear();

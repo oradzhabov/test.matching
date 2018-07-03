@@ -87,7 +87,8 @@ protected:
         float reprojectionThreshold,
         std::vector<cv::DMatch>& matches, 
         const int method,
-        cv::Mat& homography);
+        cv::Mat& homography,
+        const int minNumberMatchesAllowed);
 
 private:
     std::vector<cv::KeyPoint> m_queryKeypoints;

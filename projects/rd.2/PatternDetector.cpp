@@ -137,7 +137,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         homographyReprojectionThreshold, 
         matches,
         CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
-		roughHomography);
+		roughHomography, 20);
 
     if (info.homographyFound)
     {
@@ -178,33 +178,32 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 homographyReprojectionThreshold,
                 refinedMatches, 
                 CV_FM_LMEDS, // LMEDS good for preciss estmation
-                refinedHomography);
+                refinedHomography, 4);
 
-            if (!info.homographyFound || refinedHomography.empty())
-                return info.homographyFound;
+            if (info.homographyFound && !refinedHomography.empty()) {
+#if _DEBUG
+                cv::showAndSave("MatchesWithWarpedPose", getMatchesImage(warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
+#endif
+                // Get a result homography as result of matrix product of refined and rough homographies:
+                info.homography = roughHomography * refinedHomography;
 
 #if _DEBUG
-            cv::showAndSave("MatchesWithWarpedPose", getMatchesImage(warpedImg, m_pattern.grayImg, warpedKeypoints, m_pattern.keypoints, refinedMatches, 100));
-#endif
-            // Get a result homography as result of matrix product of refined and rough homographies:
-            info.homography = roughHomography * refinedHomography;
+                // Warp image using found refined homography
+                cv::Mat warpedRefinedImg;
+                cv::warpPerspective(m_grayImg, warpedRefinedImg, info.homography, m_pattern.size, cv::WARP_INVERSE_MAP | cv::INTER_CUBIC);
+                cv::showAndSave("Warped Refined image", warpedRefinedImg);
 
+                // Transform contour with rough homography
+                cv::perspectiveTransform(m_pattern.points2d, info.points2d, roughHomography);
+                info.draw2dContour(tmp, CV_RGB(0, 200, 0));
+#endif
+
+                // Transform contour with precise homography
+                cv::perspectiveTransform(m_pattern.points2d, info.points2d, info.homography);
 #if _DEBUG
-            // Warp image using found refined homography
-            cv::Mat warpedRefinedImg;
-            cv::warpPerspective(m_grayImg, warpedRefinedImg, info.homography, m_pattern.size, cv::WARP_INVERSE_MAP | cv::INTER_CUBIC);
-            cv::showAndSave("Warped Refined image", warpedRefinedImg);
-
-            // Transform contour with rough homography
-            cv::perspectiveTransform(m_pattern.points2d, info.points2d, roughHomography);
-            info.draw2dContour(tmp, CV_RGB(0,200,0));
+                info.draw2dContour(tmp, CV_RGB(200, 0, 0));
 #endif
-
-            // Transform contour with precise homography
-            cv::perspectiveTransform(m_pattern.points2d, info.points2d, info.homography);
-#if _DEBUG
-            info.draw2dContour(tmp, CV_RGB(200,0,0));
-#endif
+            }
         }
         else
         {
@@ -422,7 +421,7 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
 
                 // Pass only matches where distance ratio between 
                 // nearest matches is greater than 1.5 (distinct criteria)
-                if (distanceRatio < minRatio && bestMatch.distance <= maxDistance)
+                if (distanceRatio <= minRatio && bestMatch.distance <= maxDistance)
                 {
                     matches.push_back(bestMatch);
                 }
@@ -431,7 +430,7 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
         else { // Good because use max filter tests, but bad because works only for 1-train per 1-query
             std::vector<std::vector<cv::DMatch> > matches12, matches21;
 
-            const std::vector<cv::Mat> trainDescriptors = m_matcher->getTrainDescriptors();
+            const std::vector<cv::Mat> & trainDescriptors = m_matcher->getTrainDescriptors();
 
             // From image 1 to image 2
             m_matcher->knnMatch(queryDescriptors, trainDescriptors[0], matches12, 2); // return 2 nearest neighbours
@@ -463,11 +462,10 @@ bool PatternDetector::refineMatchesWithHomography
     float reprojectionThreshold,
     std::vector<cv::DMatch>& matches,
     const int method,
-    cv::Mat& homography
+    cv::Mat& homography,
+    const int minNumberMatchesAllowed
     )
 {
-    const int minNumberMatchesAllowed = 12;
-
     if (matches.size() < minNumberMatchesAllowed)
         return false;
 
@@ -497,5 +495,5 @@ bool PatternDetector::refineMatchesWithHomography
     }
 
     matches.swap(inliers);
-    return matches.size() > inliers.size() * 0.4;
+    return matches.size() > inliers.size() * 0.3;
 }
