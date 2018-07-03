@@ -129,16 +129,41 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
 #endif
     cv::Mat                     roughHomography;
     std::vector<cv::DMatch>     refinedMatches;
-
-    // Find homography transformation and detect good matches
-    info.homographyFound = refineMatchesWithHomography(
-        m_queryKeypoints, 
-        m_pattern.keypoints, 
-        homographyReprojectionThreshold, 
-        matches,
-        CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
-		roughHomography, 20);
-
+    
+    if (false)
+    {
+        // Proved technique:
+        // Reject wrong points by RANSAC and use LMEDS by filtered points
+        // +: Improve quality of poored images
+        // -: eat CPU
+        //
+        // Reject wrong point correspondences(matches) that would provoke a bad result
+        refineMatchesWithHomography(
+            m_queryKeypoints,
+            m_pattern.keypoints,
+            homographyReprojectionThreshold,
+            matches,
+            CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
+            roughHomography, 4);
+        // Find homography transformation and detect good matches
+        info.homographyFound = refineMatchesWithHomography(
+            m_queryKeypoints,
+            m_pattern.keypoints,
+            homographyReprojectionThreshold,
+            matches,
+            CV_FM_LMEDS,
+            roughHomography, 5);
+    }
+    else {
+        info.homographyFound = refineMatchesWithHomography(
+            m_queryKeypoints,
+            m_pattern.keypoints,
+            homographyReprojectionThreshold,
+            matches,
+            CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
+            roughHomography, 4);
+    }
+        
     if (info.homographyFound)
     {
 #if _DEBUG

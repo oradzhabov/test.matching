@@ -32,8 +32,12 @@ public:
         //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(60),
         //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
         //
-        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam*/), // AKAZE more accurately than BRISK(Binary Robust Invariant Scalable Keypoints), but BRISK faster and good for first approach
+        // // AKAZE more accurately than BRISK(Binary Robust Invariant Scalable Keypoints), but BRISK faster and good for first approach
+        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam. todo: really?*/),
         cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
+        //
+        // NORM_HAMMING should be used with ORB, BRISK, AKAZE and BRIEF
+        // NORM_HAMMING2 should be used with ORB when WTA_K==3 or 4 (see ORB::ORB constructor description)
         cv::Ptr<cv::DescriptorMatcher>      matcher = new cv::BFMatcher(cv::NORM_HAMMING, false),
         bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
         );
