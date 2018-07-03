@@ -406,7 +406,7 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
 
     if (enableRatioTest)
     {
-        if (true) {
+        if (false) {
             m_knnMatches.clear();
 
             // KNN match will return 2 nearest matches for each query descriptor
@@ -466,7 +466,7 @@ bool PatternDetector::refineMatchesWithHomography
     cv::Mat& homography
     )
 {
-    const int minNumberMatchesAllowed = 4;
+    const int minNumberMatchesAllowed = 12;
 
     if (matches.size() < minNumberMatchesAllowed)
         return false;
@@ -497,5 +497,5 @@ bool PatternDetector::refineMatchesWithHomography
     }
 
     matches.swap(inliers);
-    return matches.size() > minNumberMatchesAllowed;
+    return matches.size() > inliers.size() * 0.4;
 }
