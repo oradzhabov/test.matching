@@ -120,7 +120,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     getMatches(m_queryDescriptors, matches);
 
 #if _DEBUG
-    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
+    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.grayImg, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
     //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
 #endif
 
@@ -333,12 +333,12 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
 	// Extract feature points from input image
     bool result = PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors);
 
-#if _DEBUG
+#if _DEBUG2
     // Draw keypoints
     cv::Mat tmp;
     // Draw the keypoints with scale and orientation information
     cv::drawKeypoints(m_grayImg,    // original image
-        m_queryKeypoints,			// vector of keypoints
+        std::vector<cv::KeyPoint>(m_queryKeypoints.begin(), m_queryKeypoints.begin() + std::min<size_t>(m_queryKeypoints.size(), 100)),			// vector of keypoints
         tmp,				        // the resulting image
         cv::Scalar(0, 255, 0),	    // color of the points
         cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); //drawing flag
@@ -361,7 +361,7 @@ bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv:
         // Filter keypoints by quality
         std::vector<cv::KeyPoint> keypointsFiltered;
         for (size_t i = 0; i < keypoints.size(); i++)
-            if (keypoints[i].response > 70)
+            if (keypoints[i].response > 10)
                 keypointsFiltered.push_back(keypoints[i]);
 
         // If filtering have any sense, swap them to result keypoints
@@ -415,13 +415,13 @@ void PatternDetector::symmetryTest(const std::vector<std::vector<cv::DMatch> >& 
     for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches1.begin(); matchIterator1 != matches1.end(); ++matchIterator1) {
 
         // ignore deleted matches
-        if (matchIterator1->empty() || matchIterator1->size() < 2)
+        if (matchIterator1->size() < 2)
             continue;
 
         // for all matches image 2 -> image 1
         for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator2 = matches2.begin(); matchIterator2 != matches2.end(); ++matchIterator2) {
             // ignore deleted matches
-            if (matchIterator2->empty() || matchIterator2->size() < 2)
+            if (matchIterator2->size() < 2)
                 continue;
 
             // Match symmetry test

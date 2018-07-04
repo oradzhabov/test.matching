@@ -29,16 +29,16 @@ public:
     (
         //cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
         //
-        //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(60),
-        //cv::Ptr<cv::FeatureDetector>        extractor = cv::BRISK::create(),
+        cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(5), // its slow, but the best to see far from cam. About 6k keypoints
+        cv::Ptr<cv::FeatureDetector>        extractor = cv::BRISK::create(),
         //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
         //
-        //cv::Ptr<cv::FeatureDetector>        detector = cv::MSER::create(),
-        //cv::Ptr<cv::DescriptorExtractor>        extractor = cv::BRISK::create(),
+        //cv::Ptr<cv::FeatureDetector>        detector = cv::MSER::create(3, 60, 14400, 0.25),
+        //cv::Ptr<cv::DescriptorExtractor>        extractor = cv::ORB::create(),
         //
-        // // AKAZE more accurately than BRISK(Binary Robust Invariant Scalable Keypoints), but BRISK faster and good for first approach
-        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam. todo: really?*/),
-        cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
+        // AKAZE better in close distance. BRISK(5) better for far distance
+        //cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam. todo: really?*/),
+        //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
         //
         // NORM_HAMMING should be used with ORB, BRISK, AKAZE and BRIEF
         // NORM_HAMMING2 should be used with ORB when WTA_K==3 or 4 (see ORB::ORB constructor description)
