@@ -450,10 +450,10 @@ void PatternDetector::getRatiotedAndSortedMatches(const cv::Mat& queryDescriptor
     // From image 1 to image 2
     m_matcher->knnMatch(queryDescriptors, trainDescriptors[0], matches12, 2); // return 2 nearest neighbours
 
-                                                                              // From image 2 to image 1
+    // From image 2 to image 1
     m_matcher->knnMatch(trainDescriptors[0], queryDescriptors, matches21, 2); // return 2 nearest neighbours
 
-                                                                              // for all matches image 1 -> image 2
+    // for all matches image 1 -> image 2
     for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches12.begin(); matchIterator1 != matches12.end(); ++matchIterator1) {
         // ignore
         if (matchIterator1->size() < 2)
@@ -534,14 +534,71 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
             // From image 2 to image 1
             m_matcher->knnMatch(trainDescriptors[0], queryDescriptors, matches21, 2); // return 2 nearest neighbours
 
-            // Remove matches for which NN ratio is > than threshold
-            // clean image 1 -> image 2 matches
-            ratioTest(matches12, minRatio);
-            // clean image 2 -> image 1 matches
-            ratioTest(matches21, minRatio);
+            if (false) { // new implementation
+                std::list<std::vector<cv::DMatch> >   matches1f;
+                std::list<std::vector<cv::DMatch> >   matches2f;
 
-            // 4. Remove non-symmetrical matches
-            symmetryTest(matches12, matches21, matches);
+                // (Ratio test) Filter matches for which NN ratio is > than threshold
+                std::copy_if(matches12.begin(), matches12.end(), std::back_inserter(matches1f), [minRatio](std::vector<cv::DMatch> i) { return i.size() > 1 && i[0].distance / i[1].distance <= minRatio; });
+                std::copy_if(matches21.begin(), matches21.end(), std::back_inserter(matches2f), [minRatio](std::vector<cv::DMatch> i) { return i.size() > 1 && i[0].distance / i[1].distance <= minRatio; });
+
+                std::list<std::vector<cv::DMatch> >::iterator matches1f_s = matches1f.begin();
+                std::list<std::vector<cv::DMatch> >::iterator matches1f_e = matches1f.end();
+
+                if (false) { // optimize
+                    // Sort to optimize
+                    matches1f.sort([](const std::vector<cv::DMatch> &a, const std::vector<cv::DMatch> &b) { return a.front().queryIdx < b.front().queryIdx; });
+                    matches2f.sort([](const std::vector<cv::DMatch> &a, const std::vector<cv::DMatch> &b) { return a.front().trainIdx < b.front().trainIdx; });
+
+                    // Found bound values
+                    int matches1fMin = matches1f.front().front().queryIdx;
+                    int matches1fMax = matches1f.back().front().queryIdx;
+                    int matches2fMin = matches2f.front().front().trainIdx;
+                    int matches2fMax = matches2f.back().front().trainIdx;
+
+                    // Found bound iterators
+                    std::vector<cv::DMatch> itt = { cv::DMatch(matches2fMin,0, 0.0f) , cv::DMatch(matches2fMin,0, 0.0f) };
+                    matches1f_s = std::lower_bound(matches1f.begin(), matches1f.end(), itt,
+                        [matches2fMin](std::vector<cv::DMatch> lhs, std::vector<cv::DMatch> rhs) -> bool { return lhs.front().queryIdx < rhs.front().queryIdx; });
+                    if (matches1f_s != matches1f.begin())
+                        matches1f_s--;
+
+                    itt = { cv::DMatch(matches2fMax,0, 0.0f) , cv::DMatch(matches2fMax,0, 0.0f) };
+                    matches1f_e = std::upper_bound(matches1f.begin(), matches1f.end(), itt,
+                        [matches2fMax](std::vector<cv::DMatch> lhs, std::vector<cv::DMatch> rhs) -> bool { return lhs.front().queryIdx < rhs.front().queryIdx; });
+                    if (matches1f_e != matches1f.end())
+                        matches1f_e++;
+                }
+
+                // (Symmetry test) Filter non-symmetrical matches
+                // for all matches image 1 -> image 2
+                for (std::list<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches1f_s; matchIterator1 != matches1f_e; ++matchIterator1) {
+                    // for all matches image 2 -> image 1
+                    for (std::list<std::vector<cv::DMatch> >::const_iterator matchIterator2 = matches2f.begin(); matchIterator2 != matches2f.end(); ++matchIterator2) {
+
+                        // Match symmetry test
+                        if (matchIterator1->front().queryIdx == matchIterator2->front().trainIdx &&
+                            matchIterator2->front().queryIdx == matchIterator1->front().trainIdx) {
+
+                            // add symmetrical match
+                            matches.push_back(cv::DMatch(matchIterator1->front().queryIdx, matchIterator1->front().trainIdx, matchIterator1->front().distance));
+
+                            matches2f.erase(matchIterator2);
+                            break; // next match in image 1 -> image 2
+                        }
+                    }
+                }
+            }
+            else { // old implementation
+                // Remove matches for which NN ratio is > than threshold
+                // clean image 1 -> image 2 matches
+                ratioTest(matches12, minRatio);
+                // clean image 2 -> image 1 matches
+                ratioTest(matches21, minRatio);
+
+                // Remove non-symmetrical matches
+                symmetryTest(matches12, matches21, matches);
+            }
         }
     }
     else
