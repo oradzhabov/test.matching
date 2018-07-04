@@ -118,19 +118,9 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     // Get matches with current pattern
     std::vector<cv::DMatch>     matches;
     getMatches(m_queryDescriptors, matches);
-    
-    {
-        cv::Mat tmp;
-        // Draw the keypoints with scale and orientation information
-        cv::drawKeypoints(image,		// original image
-            m_queryKeypoints,					// vector of keypoints
-            tmp,				// the resulting image
-            cv::Scalar(0, 255, 0),	// color of the points
-            cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); //drawing flag
-        cv::imshow("tmp", tmp);
-    }
+
 #if _DEBUG
-    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
+    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
     //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
 #endif
 
@@ -177,7 +167,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     if (info.homographyFound)
     {
 #if _DEBUG
-        cv::showAndSave("Refined matches using RANSAC", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
+        cv::showAndSave("Refined matches using RANSAC", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
 #endif
         // If homography refinement enabled improve found transformation
         if (enableHomographyRefinement)
@@ -341,7 +331,21 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
     //PatternDetector::getEdges(m_grayImg, m_grayImg);
 
 	// Extract feature points from input image
-    return PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors);
+    bool result = PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors);
+
+#if _DEBUG
+    // Draw keypoints
+    cv::Mat tmp;
+    // Draw the keypoints with scale and orientation information
+    cv::drawKeypoints(m_grayImg,    // original image
+        m_queryKeypoints,			// vector of keypoints
+        tmp,				        // the resulting image
+        cv::Scalar(0, 255, 0),	    // color of the points
+        cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); //drawing flag
+    cv::imshow("Keypoints", tmp);
+#endif // _DEBUG
+
+    return result;
 }
 
 bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
@@ -421,10 +425,8 @@ void PatternDetector::symmetryTest(const std::vector<std::vector<cv::DMatch> >& 
                 continue;
 
             // Match symmetry test
-            if ((*matchIterator1)[0].queryIdx ==
-                (*matchIterator2)[0].trainIdx &&
-                (*matchIterator2)[0].queryIdx ==
-                (*matchIterator1)[0].trainIdx) {
+            if ((*matchIterator1)[0].queryIdx == (*matchIterator2)[0].trainIdx &&
+                (*matchIterator2)[0].queryIdx == (*matchIterator1)[0].trainIdx) {
 
                 // add symmetrical match
                 symMatches.push_back( cv::DMatch((*matchIterator1)[0].queryIdx, (*matchIterator1)[0].trainIdx, (*matchIterator1)[0].distance));
