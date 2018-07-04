@@ -436,6 +436,60 @@ void PatternDetector::symmetryTest(const std::vector<std::vector<cv::DMatch> >& 
     }
 }
 
+void PatternDetector::getRatiotedAndSortedMatches(const cv::Mat& queryDescriptors, std::list<cv::DMatch>& matches) {
+    const std::vector<cv::Mat>              & trainDescriptors = m_matcher->getTrainDescriptors();
+    std::vector<std::vector<cv::DMatch> >   matches12;
+    std::vector<std::vector<cv::DMatch> >   matches21;
+
+    matches.clear();
+
+    // Prealloc memory to speed up knnMatch() with working with std::Vector
+    matches12.reserve(queryDescriptors.rows);
+    matches21.reserve(trainDescriptors[0].rows);
+
+    // From image 1 to image 2
+    m_matcher->knnMatch(queryDescriptors, trainDescriptors[0], matches12, 2); // return 2 nearest neighbours
+
+                                                                              // From image 2 to image 1
+    m_matcher->knnMatch(trainDescriptors[0], queryDescriptors, matches21, 2); // return 2 nearest neighbours
+
+                                                                              // for all matches image 1 -> image 2
+    for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches12.begin(); matchIterator1 != matches12.end(); ++matchIterator1) {
+        // ignore
+        if (matchIterator1->size() < 2)
+            continue;
+
+        // for all matches image 2 -> image 1
+        for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator2 = matches21.begin(); matchIterator2 != matches21.end(); ++matchIterator2) {
+            // ignore
+            if (matchIterator2->size() < 2)
+                continue;
+
+            // Match symmetry test
+            if ((*matchIterator1)[0].queryIdx == (*matchIterator2)[0].trainIdx &&
+                (*matchIterator2)[0].queryIdx == (*matchIterator1)[0].trainIdx) {
+
+                float ratio12 = (*matchIterator1)[0].distance / (*matchIterator1)[1].distance;
+                float ratio21 = (*matchIterator2)[0].distance / (*matchIterator2)[1].distance;
+
+                cv::DMatch m = cv::DMatch((*matchIterator1)[0].queryIdx, (*matchIterator1)[0].trainIdx, (*matchIterator1)[0].distance);
+                m.distance = std::max<float>(ratio12, ratio21); // use distance as maximum ratio
+                matches.push_back(m);
+                break; // next match in image 1 -> image 2
+            }
+        }
+    }
+    // Sort matches by increasing the ratio. First - best, last - worst
+    //std::sort(matches.begin(), matches.end(), [](const cv::DMatch & a, const cv::DMatch & b) -> bool { return a.distance < b.distance; });
+    matches.sort([](const cv::DMatch &a, const cv::DMatch &b) { return a.distance < b.distance; });
+    /*...
+    for (int i = 0; i < symMatches.size(); i++) {
+    if (symMatches[i].ratio > minRatio)
+    matches;
+    }
+    */
+}
+
 void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & minRatio, const float & maxDistance)
 {
     matches.clear();
@@ -469,63 +523,25 @@ void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv
 
             const std::vector<cv::Mat> & trainDescriptors = m_matcher->getTrainDescriptors();
 
+            // Prealloc memory to speed up knnMatch() with working with std::Vector
+            matches12.reserve(queryDescriptors.rows);
+            matches21.reserve(trainDescriptors[0].rows);
+
+
             // From image 1 to image 2
             m_matcher->knnMatch(queryDescriptors, trainDescriptors[0], matches12, 2); // return 2 nearest neighbours
 
             // From image 2 to image 1
             m_matcher->knnMatch(trainDescriptors[0], queryDescriptors, matches21, 2); // return 2 nearest neighbours
 
-            if (true) {
-                // Remove matches for which NN ratio is > than threshold
-                // clean image 1 -> image 2 matches
-                ratioTest(matches12, minRatio);
-                // clean image 2 -> image 1 matches
-                ratioTest(matches21, minRatio);
+            // Remove matches for which NN ratio is > than threshold
+            // clean image 1 -> image 2 matches
+            ratioTest(matches12, minRatio);
+            // clean image 2 -> image 1 matches
+            ratioTest(matches21, minRatio);
 
-                // 4. Remove non-symmetrical matches
-                symmetryTest(matches12, matches21, matches);
-            }
-            else {
-                struct S {
-                    cv::DMatch symMatch;
-                    float ratio;
-                };
-                std::vector<S> symMatches;
-                // for all matches image 1 -> image 2
-                for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator1 = matches12.begin(); matchIterator1 != matches12.end(); ++matchIterator1) {
-
-                    // ignore deleted matches
-                    if (matchIterator1->empty() || matchIterator1->size() < 2)
-                        continue;
-
-                    // for all matches image 2 -> image 1
-                    for (std::vector<std::vector<cv::DMatch> >::const_iterator matchIterator2 = matches21.begin(); matchIterator2 != matches21.end(); ++matchIterator2) {
-                        // ignore deleted matches
-                        if (matchIterator2->empty() || matchIterator2->size() < 2)
-                            continue;
-
-                        // Match symmetry test
-                        if ((*matchIterator1)[0].queryIdx == (*matchIterator2)[0].trainIdx &&
-                            (*matchIterator2)[0].queryIdx == (*matchIterator1)[0].trainIdx) {
-
-                            S s;
-                            s.symMatch = cv::DMatch((*matchIterator1)[0].queryIdx, (*matchIterator1)[0].trainIdx, (*matchIterator1)[0].distance);
-                            float ratio12 = (*matchIterator1)[0].distance / (*matchIterator1)[1].distance;
-                            float ratio21 = (*matchIterator2)[0].distance / (*matchIterator2)[1].distance;
-                            s.ratio = std::max<float>(ratio12, ratio21);
-                            symMatches.push_back(s);
-                            break; // next match in image 1 -> image 2
-                        }
-                    }
-                }
-                std::sort(symMatches.begin(), symMatches.end(), [](const S & a, const S & b) -> bool { return a.ratio < b.ratio; } );
-                /*...
-                for (int i = 0; i < symMatches.size(); i++) {
-                    if (symMatches[i].ratio > minRatio)
-                        matches;
-                }
-                */
-            }
+            // 4. Remove non-symmetrical matches
+            symmetryTest(matches12, matches21, matches);
         }
     }
     else
