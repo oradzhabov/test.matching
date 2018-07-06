@@ -46,7 +46,7 @@ public:
         bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
         );
 
-    bool extractFeatures(const cv::Mat& image);
+    bool extractFeatures(const cv::Mat& image, const cv::Mat & mask = cv::Mat());
     /**
     * 
     */
@@ -74,7 +74,7 @@ public:
 
 protected:
 
-    static bool extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
+    static bool extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, const cv::Mat & mask = cv::Mat());
 
     void getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & minRatio = 1.f / 1.2f, const float & maxDistance = std::numeric_limits<float>::max());
     void getRatiotedAndSortedMatches(const cv::Mat& queryDescriptors, std::list<cv::DMatch>& matches);

@@ -322,7 +322,7 @@ void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {
     cv::addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edges);
 }
 
-bool PatternDetector::extractFeatures(const cv::Mat& image) {
+bool PatternDetector::extractFeatures(const cv::Mat& image, const cv::Mat & mask) {
     assert(!image.empty());
 
     // Convert input image to gray
@@ -331,7 +331,7 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
     //PatternDetector::getEdges(m_grayImg, m_grayImg);
 
 	// Extract feature points from input image
-    bool result = PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors);
+    bool result = PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors, mask);
 
 #if _DEBUG2
     // Draw keypoints
@@ -348,13 +348,13 @@ bool PatternDetector::extractFeatures(const cv::Mat& image) {
     return result;
 }
 
-bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
+bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv::Ptr<cv::DescriptorExtractor> extractor, const cv::Mat& imageGray, const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, const cv::Mat & mask)
 {
     assert(!imageGray.empty());
     assert(imageGray.channels() == 1);
 
     // Found keypoints
-    detector->detect(imageGray, keypoints);
+    detector->detect(imageGray, keypoints, mask);
 
     if (false) { // useful for BRISK detectors only
 
