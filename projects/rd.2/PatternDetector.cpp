@@ -109,8 +109,11 @@ void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, c
     matches = result;
 }
 
-bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& info)
-{
+bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& info) {
+
+    // Store last homography searching status
+    const bool didHomographyFound = info.homographyFound;
+
     // Initialize result
     info.homographyFound = false;
 
@@ -118,47 +121,22 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     if (m_queryDescriptors.empty())
         return false;
 
-   
-    // Get matches with current pattern
+    cv::Mat                     roughHomography;
+    std::vector<cv::DMatch>     refinedMatches;
     std::vector<cv::DMatch>     matches;
-    getMatches(m_queryDescriptors, matches);
-
-#if _DEBUG
-    cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.grayImg, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
-    //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
-#endif
-
 #if _DEBUG
     cv::Mat                     tmp = image.clone();
 #endif
-    cv::Mat                     roughHomography;
-    std::vector<cv::DMatch>     refinedMatches;
-    
-    if (false)
-    {
-        // Proved technique:
-        // Reject wrong points by RANSAC and use LMEDS by filtered points
-        // +: Improve quality of poored images
-        // -: eat CPU
-        //
-        // Reject wrong point correspondences(matches) that would provoke a bad result
-        refineMatchesWithHomography(
-            m_queryKeypoints,
-            m_pattern.keypoints,
-            homographyReprojectionThreshold,
-            matches,
-            CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
-            roughHomography, 4);
-        // Find homography transformation and detect good matches
-        info.homographyFound = refineMatchesWithHomography(
-            m_queryKeypoints,
-            m_pattern.keypoints,
-            homographyReprojectionThreshold,
-            matches,
-            CV_FM_LMEDS,
-            roughHomography, 5);
-    }
-    else {
+
+    if (!didHomographyFound || !enableHomographyRefinement) { // Prev frame was not successfull or we not use refinement at all. So heve we need found rough homography
+
+        // Get matches with current pattern
+        getMatches(m_queryDescriptors, matches);
+
+#if _DEBUG
+        cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.grayImg, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
+        //cv::showAndSave("Raw matches", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, 100));
+#endif
         info.homographyFound = refineMatchesWithHomography(
             m_queryKeypoints,
             m_pattern.keypoints,
@@ -166,13 +144,17 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
             matches,
             CV_FM_RANSAC, // RANSAC good for rough estmation when lot of keypoints with error comes
             roughHomography, 20); // as less this count as faster algorithm and vice versa - as bigger - as more accurately
+#if _DEBUG
+        cv::showAndSave("Refined matches using RANSAC", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
+#endif
+    }
+    else {
+        info.homographyFound = true;
+        roughHomography = info.homography;
     }
         
     if (info.homographyFound)
     {
-#if _DEBUG
-        cv::showAndSave("Refined matches using RANSAC", getMatchesImage(image, m_pattern.frame, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
-#endif
         // If homography refinement enabled improve found transformation
         if (enableHomographyRefinement)
         {

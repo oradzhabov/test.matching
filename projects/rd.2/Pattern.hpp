@@ -45,6 +45,8 @@ struct PatternTrackingInfo
   std::vector<cv::Point2f>  points2d;
   Transformation            pose3d;
 
+  PatternTrackingInfo() :homographyFound(false) {}
+
   void draw2dContour(cv::Mat& image, cv::Scalar color) const;
   void fill2dContour(cv::Mat& image, cv::Scalar color) const;
 
