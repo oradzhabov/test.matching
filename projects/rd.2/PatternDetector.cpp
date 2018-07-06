@@ -160,7 +160,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         if (enableHomographyRefinement)
         {
             const int               warpFlags = cv::WARP_INVERSE_MAP | cv::INTER_LINEAR;
-			cv::Mat                 warpedImg;
+            cv::Mat                 warpedImg;
             cv::Mat                 warpedImgBGR;
             cv::Mat                 refinedHomography;
 
@@ -172,10 +172,12 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
 
             // Get refined matches:
             std::vector<cv::KeyPoint>	warpedKeypoints;
-			cv::Mat						warpedDescriptors;
+            cv::Mat						warpedDescriptors;
 
             // Detect features on warped image
-            PatternDetector::extractFeatures(m_detector, m_extractor, warpedImg, warpedImgBGR, warpedKeypoints, warpedDescriptors);
+            info.homographyFound = PatternDetector::extractFeatures(m_detector, m_extractor, warpedImg, warpedImgBGR, warpedKeypoints, warpedDescriptors);
+            if (!info.homographyFound)
+                return false;
 
             // Match with pattern
             getMatches(warpedDescriptors, refinedMatches);
@@ -484,6 +486,10 @@ void PatternDetector::getRatiotedAndSortedMatches(const cv::Mat& queryDescriptor
 void PatternDetector::getMatches(const cv::Mat& queryDescriptors, std::vector<cv::DMatch>& matches, const float & minRatio, const float & maxDistance)
 {
     matches.clear();
+
+    // Validate source data
+    if (queryDescriptors.empty())
+        return;
 
     if (enableRatioTest)
     {
