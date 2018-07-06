@@ -116,6 +116,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
 
     // Initialize result
     info.homographyFound = false;
+    info.useExtrinsicGuess = false;
 
     // During iterating between patterns, descriptors could be cleaned. So check it here
     if (m_queryDescriptors.empty())
@@ -131,7 +132,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     if (!didHomographyFound || !enableHomographyRefinement) { // Prev frame was not successfull or we not use refinement at all. So heve we need found rough homography
 
         // Get matches with current pattern
-        getMatches(m_queryDescriptors, matches);
+        getMatches(m_queryDescriptors, matches, 1.0f / 1.4f);
 
 #if _DEBUG
         cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.grayImg, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
@@ -238,6 +239,10 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
         std::cout << " Refined Matches: " << std::setw(4) << refinedMatches.size();
     std::cout << std::endl;
 #endif
+
+    // If previous homography were found correctly
+    if (info.homographyFound && didHomographyFound)
+        info.useExtrinsicGuess = true;
 
     // Clear found result to prevent remark them later in pipeline
     if (info.homographyFound && m_queryKeypoints.size() > 0) {

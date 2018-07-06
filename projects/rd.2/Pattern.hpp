@@ -44,8 +44,12 @@ struct PatternTrackingInfo
   cv::Mat                   homography;
   std::vector<cv::Point2f>  points2d;
   Transformation            pose3d;
+  bool                      useExtrinsicGuess; ///< if true the function solvePnP() uses the provided rvec and tvec values as initial approximations of the rotation and translation vectors
+  cv::Mat                   raux;
+  cv::Mat                   taux;
 
-  PatternTrackingInfo() :homographyFound(false) {}
+
+  PatternTrackingInfo() :homographyFound(false), useExtrinsicGuess(false) {}
 
   void draw2dContour(cv::Mat& image, cv::Scalar color) const;
   void fill2dContour(cv::Mat& image, cv::Scalar color) const;
