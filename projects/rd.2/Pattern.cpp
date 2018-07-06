@@ -49,10 +49,16 @@ void PatternTrackingInfo::draw2dContour(cv::Mat& image, cv::Scalar color) const
 
 void PatternTrackingInfo::fill2dContour(cv::Mat& image, cv::Scalar color) const {
 
+    assert(!image.empty());
+
     std::vector<cv::Point> pts;
     
     for (size_t i = 0; i < points2d.size(); i++)
         pts.push_back(cv::Point(static_cast<int>(points2d[i].x), static_cast<int>(points2d[i].y)));
+
+
+    if (pts.empty())
+        return;
 
     const cv::Point* ppt[1] = { &pts[0] };
     int npt[] = { static_cast<int>(points2d.size()) };

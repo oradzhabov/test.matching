@@ -114,6 +114,10 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     // Initialize result
     info.homographyFound = false;
 
+    // During iterating between patterns, descriptors could be cleaned. So check it here
+    if (m_queryDescriptors.empty())
+        return false;
+
    
     // Get matches with current pattern
     std::vector<cv::DMatch>     matches;
@@ -367,10 +371,10 @@ bool PatternDetector::extractFeatures(cv::Ptr<cv::FeatureDetector> detector, cv:
         // If filtering have any sense, swap them to result keypoints
         if (!keypointsFiltered.empty())
             keypointsFiltered.swap(keypoints);
-
-        if (keypoints.empty())
-            return false;
     }
+
+    if (keypoints.empty())
+        return false;
 
     // Extract descriptors
     if (extractor->getDefaultName() == OppColorDescriptorExtractor::DefaultName)
