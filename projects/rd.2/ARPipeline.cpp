@@ -16,26 +16,13 @@
 ARPipeline::ARPipeline(const std::vector<cv::Mat>& patternImages, const CameraCalibration& calibration)
   : m_calibration(calibration)
 {
-    int maxEdgeSize = 0;
     for (size_t i = 0; i < patternImages.size(); i++) {
 
         PatternEntity patternEntity;
 
         PatternDetector::buildPatternFromImage(&m_patternDetector, patternImages[i], patternEntity.m_pattern);
 
-        maxEdgeSize = std::max<int>(maxEdgeSize, patternEntity.m_pattern.size.width);
-        maxEdgeSize = std::max<int>(maxEdgeSize, patternEntity.m_pattern.size.height);
-
         m_patternEntities.push_back(patternEntity);
-    }
-
-    // Found scale factors to uniform all patterns by maximum
-    for (size_t i = 0; i < m_patternEntities.size(); i++) {
-        int ptrnMaxSize = std::max<int>(m_patternEntities[i].m_pattern.size.width, m_patternEntities[i].m_pattern.size.height);
-        const float scaleUniform = static_cast<float>(maxEdgeSize) / static_cast<float>(ptrnMaxSize);
-        for (size_t j = 0; j < 4; j++) {
-            m_patternEntities[i].m_pattern.points3d[j] /= scaleUniform;
-        }
     }
 
     if (m_patternEntities.empty())
