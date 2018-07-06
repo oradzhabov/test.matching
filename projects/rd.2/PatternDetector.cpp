@@ -324,10 +324,10 @@ bool PatternDetector::extractFeatures(const cv::Mat& image, const cv::Mat & mask
     cv::Mat tmp;
     // Draw the keypoints with scale and orientation information
     cv::drawKeypoints(m_grayImg,    // original image
-        std::vector<cv::KeyPoint>(m_queryKeypoints.begin(), m_queryKeypoints.begin() + std::min<size_t>(m_queryKeypoints.size(), 100)),			// vector of keypoints
+        std::vector<cv::KeyPoint>(m_queryKeypoints.begin(), m_queryKeypoints.begin() + std::min<size_t>(m_queryKeypoints.size(), 10000)),			// vector of keypoints
         tmp,				        // the resulting image
         cv::Scalar(0, 255, 0),	    // color of the points
-        cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS); //drawing flag
+        cv::DrawMatchesFlags::DEFAULT); //drawing flag
     cv::imshow("Keypoints", tmp);
 #endif // _DEBUG
 
