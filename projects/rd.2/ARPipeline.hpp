@@ -1,14 +1,3 @@
-/*****************************************************************************
-*   Markerless AR desktop application.
-******************************************************************************
-*   by Khvedchenia Ievgen, 5th Dec 2012
-*   http://computer-vision-talks.com
-******************************************************************************
-*   Ch3 of the book "Mastering OpenCV with Practical Computer Vision Projects"
-*   Copyright Packt Publishing 2012.
-*   http://www.packtpub.com/cool-projects-with-opencv/book
-*****************************************************************************/
-
 #ifndef ARPIPELINE_HPP
 #define ARPIPELINE_HPP
 
@@ -33,11 +22,11 @@ public:
   /*
   * @brief: Return number of patterns which have been prepared for searching by this object of class.
   */
-  const size_t          getPatternsCount() const;
-  const bool            isPatternFound(const size_t index) const;
-  const PatternTrackingInfo& getPatternInfo(const size_t index) const;
+  const size_t                  getPatternsCount() const { return m_patternEntities.size(); }
+  const bool                    isPatternFound(const size_t index) const { if (index < 0 || index >= m_patternEntities.size()) return false; return m_patternEntities[index].m_patternInfo.homographyFound; }
+  const PatternTrackingInfo &   getPatternInfo(const size_t index) const { return m_patternEntities[index].m_patternInfo; }
 
-  PatternDetector     m_patternDetector;
+  cv::Ptr<PatternDetector>      m_patternDetector;
 private:
 
 private:

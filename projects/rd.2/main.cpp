@@ -1,14 +1,3 @@
-/*****************************************************************************
-*   Markerless AR desktop application.
-******************************************************************************
-*   by Khvedchenia Ievgen, 5th Dec 2012
-*   http://computer-vision-talks.com
-******************************************************************************
-*   Ch3 of the book "Mastering OpenCV with Practical Computer Vision Projects"
-*   Copyright Packt Publishing 2012.
-*   http://www.packtpub.com/cool-projects-with-opencv/book
-*****************************************************************************/
-
 ////////////////////////////////////////////////////////////////////
 // File includes:
 #include "ARDrawingContext.hpp"
@@ -176,12 +165,12 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     cv::Mat img = cameraFrame.clone();
 
     // Draw information:
-    if (pipeline.m_patternDetector.enableHomographyRefinement)
+    if (pipeline.m_patternDetector->enableHomographyRefinement)
         cv::putText(img, "Pose refinement: On   ('h' to switch off)", cv::Point(10,15), CV_FONT_HERSHEY_PLAIN, 1, CV_RGB(0,200,0));
     else
         cv::putText(img, "Pose refinement: Off  ('h' to switch on)",  cv::Point(10,15), CV_FONT_HERSHEY_PLAIN, 1, CV_RGB(0,200,0));
 
-    cv::putText(img, "RANSAC threshold: " + ToString(pipeline.m_patternDetector.homographyReprojectionThreshold) + "( Use'-'/'+' to adjust)", cv::Point(10, 30), CV_FONT_HERSHEY_PLAIN, 1, CV_RGB(0,200,0));
+    cv::putText(img, "RANSAC threshold: " + ToString(pipeline.m_patternDetector->homographyReprojectionThreshold) + "( Use'-'/'+' to adjust)", cv::Point(10, 30), CV_FONT_HERSHEY_PLAIN, 1, CV_RGB(0,200,0));
 
     // Set a new camera frame:
     drawingCtx.updateBackground(img);
@@ -208,17 +197,17 @@ bool processFrame(const cv::Mat& cameraFrame, ARPipeline& pipeline, ARDrawingCon
     bool shouldQuit = false;
     if (keyCode == '+' || keyCode == '=')
     {
-        pipeline.m_patternDetector.homographyReprojectionThreshold += 0.2f;
-        pipeline.m_patternDetector.homographyReprojectionThreshold = std::min(10.0f, pipeline.m_patternDetector.homographyReprojectionThreshold);
+        pipeline.m_patternDetector->homographyReprojectionThreshold += 0.2f;
+        pipeline.m_patternDetector->homographyReprojectionThreshold = std::min(10.0f, pipeline.m_patternDetector->homographyReprojectionThreshold);
     }
     else if (keyCode == '-')
     {
-        pipeline.m_patternDetector.homographyReprojectionThreshold -= 0.2f;
-        pipeline.m_patternDetector.homographyReprojectionThreshold = std::max(0.0f, pipeline.m_patternDetector.homographyReprojectionThreshold);
+        pipeline.m_patternDetector->homographyReprojectionThreshold -= 0.2f;
+        pipeline.m_patternDetector->homographyReprojectionThreshold = std::max(0.0f, pipeline.m_patternDetector->homographyReprojectionThreshold);
     }
     else if (keyCode == 'h')
     {
-        pipeline.m_patternDetector.enableHomographyRefinement = !pipeline.m_patternDetector.enableHomographyRefinement;
+        pipeline.m_patternDetector->enableHomographyRefinement = !pipeline.m_patternDetector->enableHomographyRefinement;
     }
     else if (keyCode == 27 || keyCode == 'q')
     {

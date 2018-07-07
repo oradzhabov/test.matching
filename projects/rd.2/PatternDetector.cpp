@@ -1,14 +1,3 @@
-/*****************************************************************************
-*   Markerless AR desktop application.
-******************************************************************************
-*   by Khvedchenia Ievgen, 5th Dec 2012
-*   http://computer-vision-talks.com
-******************************************************************************
-*   Ch3 of the book "Mastering OpenCV with Practical Computer Vision Projects"
-*   Copyright Packt Publishing 2012.
-*   http://www.packtpub.com/cool-projects-with-opencv/book
-*****************************************************************************/
-
 // todo: maybe good idea - optflow for tracking
 // http://answers.opencv.org/question/51749/c-video-stabilization-pipeline-i-certainly-missed-something/
 
@@ -38,6 +27,32 @@ PatternDetector::PatternDetector(cv::Ptr<cv::FeatureDetector> detector,
 {
 }
 
+cv::Ptr<PatternDetector> PatternDetector::CreateAKAZE() {
+    // NORM_HAMMING should be used with ORB, BRISK, AKAZE and BRIEF
+    // NORM_HAMMING2 should be used with ORB when WTA_K==3 or 4 (see ORB::ORB constructor description)
+
+    // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher);
+    bool enableRatioTest = true;
+    cv::Ptr<PatternDetector> ptr = cv::makePtr<PatternDetector>(cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB, 0, 1, 0.0001f/*found much more points*/, 7/*as more as can see more in far from cam. todo: really?*/),
+                                                                cv::AKAZE::create(),
+                                                                new cv::BFMatcher(cv::NORM_HAMMING, false),
+                                                                enableRatioTest);
+    return ptr;
+}
+cv::Ptr<PatternDetector> PatternDetector::CreateBRISK() {
+    // NORM_HAMMING should be used with ORB, BRISK, AKAZE and BRIEF
+    // NORM_HAMMING2 should be used with ORB when WTA_K==3 or 4 (see ORB::ORB constructor description)
+
+    // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher);
+    bool enableRatioTest = true;
+    cv::Ptr<PatternDetector> ptr = cv::makePtr<PatternDetector>(cv::BRISK::create(5), // its slow, but the best to see far from cam. About 6k keypoints
+                                                                //cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
+                                                                cv::BRISK::create(),
+                                                                new cv::BFMatcher(cv::NORM_HAMMING, false),
+                                                                enableRatioTest);
+    return ptr;
+}
+
 
 void PatternDetector::train(const Pattern& pattern)
 {
@@ -58,7 +73,7 @@ void PatternDetector::train(const Pattern& pattern)
     m_matcher->train();
 }
 
-void PatternDetector::buildPatternFromImage(const PatternDetector * detector, const cv::Mat& image, Pattern& pattern)
+void PatternDetector::buildPatternFromImage(const cv::Ptr<PatternDetector> detector, const cv::Mat& image, Pattern& pattern)
 {
     // Store original image in pattern structure
     pattern.size = cv::Size(image.cols, image.rows);

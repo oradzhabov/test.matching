@@ -1,14 +1,3 @@
-/*****************************************************************************
-*   Markerless AR desktop application.
-******************************************************************************
-*   by Khvedchenia Ievgen, 5th Dec 2012
-*   http://computer-vision-talks.com
-******************************************************************************
-*   Ch3 of the book "Mastering OpenCV with Practical Computer Vision Projects"
-*   Copyright Packt Publishing 2012.
-*   http://www.packtpub.com/cool-projects-with-opencv/book
-*****************************************************************************/
-
 #ifndef EXAMPLE_MARKERLESS_AR_PATTERNDETECTOR_HPP
 #define EXAMPLE_MARKERLESS_AR_PATTERNDETECTOR_HPP
 
@@ -25,26 +14,13 @@ public:
     /**
      * Initialize a pattern detector with specified feature detector, descriptor extraction and matching algorithm
      */
-    PatternDetector
-    (
-        //cv::Ptr<cv::FeatureDetector>     detector = cv::ORB::create(1000),
-        //
-        //cv::Ptr<cv::FeatureDetector>        detector = cv::BRISK::create(5), // its slow, but the best to see far from cam. About 6k keypoints
-        //cv::Ptr<cv::FeatureDetector>        extractor = cv::BRISK::create(),
-        //cv::Ptr<cv::DescriptorExtractor>    extractor = cv::Ptr<OppColorDescriptorExtractor>( new OppColorDescriptorExtractor(cv::BRISK::create())), //OppColorDeswcriptor does not work with AKAZE
-        //
-        //cv::Ptr<cv::FeatureDetector>        detector = cv::MSER::create(3, 60, 14400, 0.25),
-        //cv::Ptr<cv::DescriptorExtractor>        extractor = cv::ORB::create(),
-        //
-        // AKAZE better in close distance. BRISK(5) better for far distance
-        cv::Ptr<cv::FeatureDetector>        detector = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB,0,1,0.0001f/*found much more points*/,7/*as more as can see more in far from cam. todo: really?*/),
-        cv::Ptr<cv::DescriptorExtractor>    extractor = cv::AKAZE::create(),
-        //
-        // NORM_HAMMING should be used with ORB, BRISK, AKAZE and BRIEF
-        // NORM_HAMMING2 should be used with ORB when WTA_K==3 or 4 (see ORB::ORB constructor description)
-        cv::Ptr<cv::DescriptorMatcher>      matcher = new cv::BFMatcher(cv::NORM_HAMMING, false),
-        bool enableRatioTest                       = true // ros: ATTENTION: true or here or in second param in BFMatcher. Note: If here, it will drop bad results. Insteads of whether true in BFMatcher
-        );
+    PatternDetector (cv::Ptr<cv::FeatureDetector>        detector,
+                    cv::Ptr<cv::DescriptorExtractor>    extractor,
+                    cv::Ptr<cv::DescriptorMatcher>      matcher,
+                    bool enableRatioTest);
+
+    static cv::Ptr<PatternDetector>    CreateAKAZE();
+    static cv::Ptr<PatternDetector>    CreateBRISK();
 
     bool extractFeatures(const cv::Mat& image, const cv::Mat & mask = cv::Mat());
     /**
@@ -60,7 +36,7 @@ public:
     * Initialize Pattern structure from the input image.
     * This function finds the feature points and extract descriptors for them.
     */
-    static void buildPatternFromImage(const PatternDetector * detector, const cv::Mat& image, Pattern& pattern);
+    static void buildPatternFromImage(const cv::Ptr<PatternDetector> detector, const cv::Mat& image, Pattern& pattern);
 
     /**
     * Tries to find a @pattern object on given @image. 

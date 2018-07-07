@@ -1,19 +1,6 @@
-/*****************************************************************************
-*   Markerless AR desktop application.
-******************************************************************************
-*   by Khvedchenia Ievgen, 5th Dec 2012
-*   http://computer-vision-talks.com
-******************************************************************************
-*   Ch3 of the book "Mastering OpenCV with Practical Computer Vision Projects"
-*   Copyright Packt Publishing 2012.
-*   http://www.packtpub.com/cool-projects-with-opencv/book
-*****************************************************************************/
-
 #ifndef EXAMPLE_MARKERLESS_AR_PATTERN_HPP
 #define EXAMPLE_MARKERLESS_AR_PATTERN_HPP
 
-////////////////////////////////////////////////////////////////////
-// File includes:
 #include "GeometryTypes.hpp"
 #include "CameraCalibration.hpp"
 
@@ -44,7 +31,7 @@ struct PatternTrackingInfo
   cv::Mat                   homography;
   std::vector<cv::Point2f>  points2d;
   Transformation            pose3d;
-  bool                      useExtrinsicGuess; ///< if true the function solvePnP() uses the provided rvec and tvec values as initial approximations of the rotation and translation vectors
+  bool                      useExtrinsicGuess; ///< if true the function solvePnP() WITH ITERATIVE METHOD ONLY uses the provided rvec and tvec values as initial approximations of the rotation and translation vectors
   cv::Mat                   raux;
   cv::Mat                   taux;
 
