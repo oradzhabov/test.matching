@@ -303,6 +303,7 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray) {
     cv::Mat tmp;
     cv::GaussianBlur(gray, tmp, cv::Size(0, 0), 3);
     cv::addWeighted(gray, 2.1, tmp, -1.1, 0, tmp);
+    gray = tmp;
 }
 
 void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {
