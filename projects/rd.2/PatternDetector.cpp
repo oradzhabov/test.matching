@@ -64,7 +64,6 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
     pattern.size = cv::Size(image.cols, image.rows);
     pattern.frame = image.clone();
     PatternDetector::getGray(image, pattern.grayImg);
-    //PatternDetector::getEdges(pattern.grayImg, pattern.grayImg);
     
     // Build 2d and 3d contours (3d contour lie in XY plane since it's planar)
     pattern.points2d.resize(4);
@@ -95,6 +94,7 @@ void PatternDetector::buildPatternFromImage(const PatternDetector * detector, co
 
 void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, const std::vector<cv::KeyPoint>& trainKp, std::vector<cv::DMatch> & matches, const int imgWidth) {
 
+    const double                angleThreshold = CV_PI / 180.0;
     std::vector<cv::DMatch>     result;
     for (size_t i = 0; i < matches.size(); i++) {
 
@@ -102,9 +102,9 @@ void PatternDetector::horizontalTest(const std::vector<cv::KeyPoint>& queryKp, c
         const cv::Point2f & dstPt = queryKp[matches[i].queryIdx].pt + cv::Point2f(static_cast<float>(imgWidth), 0.0f);
         //
         const cv::Point2f   delta = dstPt - srcPt;
-        const double        angDegree = atan2(delta.y, delta.x) * 180 / CV_PI;
+        const double        angDegree = atan2(delta.y, delta.x);
 
-        if (fabs(angDegree) < 1) result.push_back(matches[i]);
+        if (fabs(angDegree) < angleThreshold) result.push_back(matches[i]);
     }
     matches = result;
 }
@@ -132,7 +132,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
     if (!didHomographyFound || !enableHomographyRefinement) { // Prev frame was not successfull or we not use refinement at all. So heve we need found rough homography
 
         // Get matches with current pattern
-        getMatches(m_queryDescriptors, matches, 1.0f / 1.4f);
+        getMatches(m_queryDescriptors, matches);
 
 #if _DEBUG
         cv::showAndSave("Raw matches", getMatchesImage(m_grayImg, m_pattern.grayImg, m_queryKeypoints, m_pattern.keypoints, matches, matches.size()));
@@ -180,7 +180,7 @@ bool PatternDetector::findPattern(const cv::Mat& image, PatternTrackingInfo& inf
                 return false;
 
             // Match with pattern
-            getMatches(warpedDescriptors, refinedMatches);
+            getMatches(warpedDescriptors, refinedMatches, 1.0f / 1.4f);
 
             // Warped matching NEEDS to be horizontal and collinear
             PatternDetector::horizontalTest(warpedKeypoints, m_pattern.keypoints, refinedMatches, warpedImg.cols);
@@ -288,8 +288,6 @@ void PatternDetector::getGray(const cv::Mat& image, cv::Mat& gray) {
     cv::Mat tmp;
     cv::GaussianBlur(gray, tmp, cv::Size(0, 0), 3);
     cv::addWeighted(gray, 2.1, tmp, -1.1, 0, tmp);
-    //gray = tmp;
-    cv::blur(tmp, gray, cv::Size(3, 3));
 }
 
 void PatternDetector::getEdges(const cv::Mat& gray, cv::Mat& edges) {
@@ -320,8 +318,6 @@ bool PatternDetector::extractFeatures(const cv::Mat& image, const cv::Mat & mask
 
     // Convert input image to gray
     PatternDetector::getGray(image, m_grayImg);
-    // Convert gray to edges
-    //PatternDetector::getEdges(m_grayImg, m_grayImg);
 
 	// Extract feature points from input image
     bool result = PatternDetector::extractFeatures(m_detector, m_extractor, m_grayImg, image, m_queryKeypoints, m_queryDescriptors, mask);
