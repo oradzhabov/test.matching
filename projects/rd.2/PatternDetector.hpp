@@ -26,7 +26,7 @@ public:
     /**
     * 
     */
-    void train(const Pattern& pattern);
+    void train(const Pattern * pattern);
 
     static int ratioTest(std::vector<std::vector<cv::DMatch> > & matches, const float & minRatio);
     static void symmetryTest(const std::vector<std::vector<cv::DMatch> >& matches1, const std::vector<std::vector<cv::DMatch> >& matches2, std::vector<cv::DMatch>& symMatches);
@@ -59,7 +59,7 @@ protected:
     * Function performs necessary color conversion if necessary
     * Supported input images types - 1 channel (no conversion is done), 3 channels (assuming BGR) and 4 channels (assuming BGRA).
     */
-    static void getGray(const cv::Mat& image, cv::Mat& gray);
+    static void getGray(const cv::Mat& image, cv::Mat& grayBlured, cv::Mat& gray);
     static void getEdges(const cv::Mat& gray, cv::Mat& edges);
 
     /**
@@ -79,9 +79,10 @@ private:
     cv::Mat                   m_queryDescriptors;
     std::vector< std::vector<cv::DMatch> > m_knnMatches;
 
+    cv::Mat                   m_grayBluredImg;
     cv::Mat                   m_grayImg;
 
-    Pattern                          m_pattern;
+    const Pattern *                  m_pPattern;
     cv::Ptr<cv::FeatureDetector>     m_detector;
     cv::Ptr<cv::DescriptorExtractor>    m_extractor;
     cv::Ptr<cv::DescriptorMatcher>   m_matcher;

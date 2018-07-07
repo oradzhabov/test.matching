@@ -13,6 +13,7 @@ struct Pattern
 {
   cv::Size                  size;
   cv::Mat                   frame;
+  cv::Mat                   grayBluredImg;
   cv::Mat                   grayImg;
 
   std::vector<cv::KeyPoint> keypoints;

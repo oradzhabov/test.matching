@@ -25,7 +25,7 @@ bool ARPipeline::processFrame(const cv::Mat& inputFrame) {
     bool anyPatternFound = false;
     for (size_t i = 0; i < m_patternEntities.size(); i++) {
 
-        m_patternDetector->train(m_patternEntities[i].m_pattern);
+        m_patternDetector->train(& m_patternEntities[i].m_pattern);
 
         if (m_patternDetector->findPattern(inputFrame, m_patternEntities[i].m_patternInfo)) {
             m_patternEntities[i].m_patternInfo.computePose(m_patternEntities[i].m_pattern, m_calibration);
